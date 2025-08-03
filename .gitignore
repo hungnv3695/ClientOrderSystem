@@ -1,0 +1,30 @@
+# ---- Node.js (cả backend & frontend) ----
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# ---- Dotenv ----
+**/.env
+**/.env.local
+**/.env.*.local
+
+# ---- Logs ----
+logs/
+*.log
+**/logs/
+**/*.log
+
+# ---- Build / Dist / Output ----
+**/dist/
+**/build/
+**/.vite/
+
+# ---- Editor / IDE ----
+.vscode/
+
+
+# ---- Docker (if used) ----
+**/pg_data/
+docker-compose.override.yml
+*.local.yml
