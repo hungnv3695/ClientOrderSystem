@@ -39,7 +39,7 @@ const orderNumbers = ref([])
 onMounted(async () => {
     // 1) Lấy dữ liệu ban đầu qua REST
     try {
-        const res = await axios.get('orders/numbers', { params: { limit: 50 } })
+        const res = await axios.get('orders/numbers')
         orderNumbers.value = res.data?.data || []
     } catch (e) {
         console.error('fetch numbers failed', e)
