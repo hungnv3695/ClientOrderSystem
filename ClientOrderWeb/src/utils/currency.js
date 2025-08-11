@@ -19,6 +19,5 @@ export const formatCurrencyVND = (value, options = {}) => {
 }
 
 export default {
-    formatCurrencyVND,
-    formatVNDNoSymbol,
+    formatCurrencyVND
 }

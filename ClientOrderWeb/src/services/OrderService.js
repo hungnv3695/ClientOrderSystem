@@ -5,7 +5,6 @@ import axios from './axios'
 export async function fetchMenu() {
     const res = await axios.get('menus', { params: { id: 1 } })
     // Trả về mảng menu hoặc [] nếu lỗi
-    console.log('fetchMenu', res.data)
     if (res.data?.success === true) {
         return res.data?.data.food || []
     }
