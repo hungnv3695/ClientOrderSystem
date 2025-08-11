@@ -15,6 +15,4 @@ COPY . .
 EXPOSE 5173
 
 # run vite
-CMD ["npm", "run", "dev"]
-
-
+CMD ["npm", "run", "dev", "--", "--host"]

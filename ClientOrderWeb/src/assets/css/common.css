@@ -1,0 +1,54 @@
+:root {
+    --nature-green: #A3B18A;
+    --nature-green-dark: #6C7A53;
+    --nature-green-light: #C3D1B0;
+    --nature-green-soft: #B7C9A3;
+    --nature-green-pale: #E3EEDC;
+    --success-green: #198754;
+}
+
+body,
+.nature-bg {
+    background: var(--nature-green-dark);
+    color: #ffffff;
+}
+
+div#app {
+    font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+    color: #ffffff;
+}
+
+.nature-btn,
+.btn-nature {
+    background: var(--nature-green-dark);
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.nature-btn:hover,
+.btn-nature:hover {
+    background: var(--earth-brown-dark);
+}
+
+.order-list-bg {
+    background: var(--nature-green);
+    box-shadow: 0 2px 8px #0001;
+}
+
+.menu-list-bg {
+    background: var(--nature-green);
+    box-shadow: 0 2px 8px #0001;
+}
+
+.nature-card {
+    background: var(--earth-brown-light);
+    box-shadow: 0 2px 8px #0002;
+    color: #fff;
+}
+
+.h1-screen-title {
+    color: black;
+
+}
