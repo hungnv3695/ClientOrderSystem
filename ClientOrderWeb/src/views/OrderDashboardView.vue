@@ -5,24 +5,16 @@
                 <h1>Đơn hàng đã nhận</h1>
                 <h5>(Vui lòng đợi đến khi đơn hoàn thành)</h5>
                 <div class="flex-column gap-2 pt-2 flex-grow-1 panel-box">
-                    <OrderNumberTag
-                        v-for="order in waitingOrders"
-                        :key="order.id"
-                        :number="order.orderNumber.slice(-4)"
-                        :enabled="order.status === 'Waiting'"
-                    />
+                    <OrderNumberTag v-for="order in receivedOrders" :key="order.id"
+                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received'" />
                 </div>
             </BCol>
             <BCol cols="5" class="h-100 d-flex flex-column">
                 <h1>Đơn hàng đã hoàn thành</h1>
                 <h5>(Vui lòng đến quầy để nhận đồ)</h5>
                 <div class="flex-column gap-2 pt-2 flex-grow-1 panel-box">
-                    <OrderNumberTag
-                        v-for="order in completedOrders"
-                        :key="order.id"
-                        :number="order.orderNumber.slice(-4)"
-                        :enabled="order.status === 'Waiting'"
-                    />
+                    <OrderNumberTag v-for="order in completedOrders" :key="order.id"
+                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received'" />
                 </div>
             </BCol>
         </BRow>
@@ -31,29 +23,30 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import axios from '../services/axios.js'
 import { io } from 'socket.io-client'
-import axios from '../services/axios'
+import { SHOP_CODE, SOCKET_URL } from '../config/appConfig.js'
 
-const orderNumbers = ref([])
+const orders = ref([])
 
 onMounted(async () => {
     // 1) Lấy dữ liệu ban đầu qua REST
     try {
         const res = await axios.get('orders/numbers')
-        orderNumbers.value = res.data?.data || []
+        orders.value = res.data?.data || []
     } catch (e) {
         console.error('fetch numbers failed', e)
     }
 
     // 2) Subscribe realtime qua socket
-    const socket = io('http://localhost:3000', { query: { shopId: 'SH123' } })
-    socket.on('orderNumbers', (data) => {
-        orderNumbers.value = data
+    const socket = io(SOCKET_URL, { query: { shopId: SHOP_CODE } })
+    socket.on('orders', (data) => {
+        orders.value = data
     })
 })
 
-const waitingOrders = computed(() => orderNumbers.value.filter(o => o.status === 'Waiting'))
-const completedOrders = computed(() => orderNumbers.value.filter(o => o.status === 'Completed'))
+const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received'))
+const completedOrders = computed(() => orders.value.filter(o => o.status === 'Completed'))
 </script>
 
 <style scoped>

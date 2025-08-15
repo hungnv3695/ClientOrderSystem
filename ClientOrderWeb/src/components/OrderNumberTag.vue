@@ -1,14 +1,16 @@
 <template>
   <div
     class="order-number-tab-box"
+    :class="{ 'is-clickable': clickable }"
     :style="{ color: 'white', backgroundColor }"
+    @click="handleClick"
   >
     {{ number }}
   </div>
 </template>
 
 <script setup>
-import { defineProps, computed } from 'vue'
+import { defineProps, computed, defineEmits } from 'vue'
 
 const props = defineProps({
   number: {
@@ -19,7 +21,18 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  clickable: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['click'])
+
+function handleClick(event) {
+  if (!props.clickable) return
+  emit('click', event)
+}
 
 const backgroundColor = computed(() =>
   props.enabled ? 'var(--nature-green-light)' : 'var(--nature-green)'
@@ -42,5 +55,8 @@ const backgroundColor = computed(() =>
   font-weight: 600;
   font-size: x-large;
   color: #222; /* đảm bảo tương phản trên nền trắng */
+}
+.order-number-tab-box.is-clickable {
+  cursor: pointer;
 }
 </style>

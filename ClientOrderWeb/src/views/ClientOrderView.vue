@@ -1,58 +1,42 @@
 <template>
-  <BContainer
-    fluid
-    class="min-vh-100 d-flex align-items-center justify-content-center nature-bg"
-    v-if="isWelcome"
-  >
-    <BRow class="text-center">
-      <BCol></BCol>
-      <BCol cols="auto" alignSelf="stretch">
-        <BButton class="btn-nature" size="lg" @click="openOrderScreen">Gọi món</BButton>
-      </BCol>
-      <BCol></BCol>
-    </BRow>
-  </BContainer>
-  
-  <transition name="drop">
-    <BContainer fluid class="min-vh-100 d-flex flex-column nature-bg" v-if="!isWelcome">
-      <BRow>
-        <BCol alignSelf="center">
-          <h1 class="h1-screen-title title">Gọi món</h1>
-        </BCol>
-      </BRow>
-      <BRow class="nature-bg flex-grow-1 h-100" style="min-height:0;">
-        <BCol cols="7" class="d-flex flex-column">
-            <div class="menu-scroll menu-list-bg h-100 flex-grow-1">
-              <div class="d-flex flex-column gap-2 ">
-                  <FoodCard
-                    v-for="food in menuItems"
-                    :key="food.id"
-                    :food="food"
-                    @click="addToOrder(food)"
-                  />
-              </div>
-            </div>
-        </BCol>
-        <BCol cols="5" class="h-100 d-flex flex-column">
-            <div class="lex-grow-1">
-              <OrderList
-                :orderItems="orderItems"
-                @checkout="createOrder()"
-                @increase="increaseQuantity"
-                @decrease="decreaseQuantity"
-              />
-            </div>
-        </BCol>
-      </BRow>
-      <PaymentModal
-        v-model:show="showPayment"
-        :qrImage="qrImage"
-        :amount="totalAmount"
-      />
+    <BContainer v-if="isWelcome" fluid class="min-vh-100 d-flex align-items-center justify-content-center nature-bg">
+        <BRow class="text-center">
+            <BCol />
+            <BCol cols="auto" align-self="stretch">
+                <BButton class="btn-nature" size="lg" @click="openOrderScreen">Gọi món</BButton>
+            </BCol>
+            <BCol />
+        </BRow>
     </BContainer>
 
-  </transition>
-  
+    <transition name="drop">
+        <BContainer v-if="!isWelcome" fluid class="min-vh-100 d-flex flex-column nature-bg">
+            <BRow>
+                <BCol align-self="center">
+                    <h1 class="h1-screen-title title">Gọi món</h1>
+                </BCol>
+            </BRow>
+            <BRow class="nature-bg flex-grow-1 h-100" style="min-height:0;">
+                <BCol cols="7" class="d-flex flex-column">
+                    <div class="menu-scroll menu-list-bg h-100 flex-grow-1">
+                        <div class="d-flex flex-column gap-2 ">
+                            <FoodCard v-for="food in menuItems" :key="food.id" :food="food" @click="addToOrder(food)" />
+                        </div>
+                    </div>
+                </BCol>
+                <BCol cols="5" class="h-100 d-flex flex-column">
+                    <div class="lex-grow-1">
+                        <OrderList :order-items="orderItems" @checkout="createOrder" @increase="increaseQuantity"
+                            @decrease="decreaseQuantity" />
+                    </div>
+                </BCol>
+            </BRow>
+            <PaymentModal v-model:show="showPayment" :qr-image="qrImage" :amount="totalAmount" :content="orderNumber"
+                :order-id="orderId" @paid="handlePaid" />
+        </BContainer>
+
+    </transition>
+
 </template>
 
 <script setup>
@@ -60,40 +44,48 @@
 
 import { ref, computed, onMounted } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
-import { fetchMenu, submitOrder } from '../services/OrderService.js'
+import { fetchMenu, submitOrder, updateExistingOrder } from '../services/OrderService.js'
+import { SHOP_CODE, DEVICE_CODE, buildQrImage } from '../config/appConfig.js'
 
 const menuItems = ref([])
 
 
 onMounted(async () => {
-  menuItems.value = await fetchMenu()
+    menuItems.value = await fetchMenu()
 })
 
 const orderItems = ref([])
 const showPayment = ref(false)
-const qrImage = '/src/assets/payment-qr.jpg' // Đường dẫn ảnh QR code demo, thay bằng ảnh thật nếu cần
+var qrImage = ''; // Đường dẫn ảnh QR code demo, thay bằng ảnh thật nếu cần
+var content = ''; // Nội dung thanh toán
+var orderNumber = ''; // Mã đơn hàng
+let orderId = '' // ID đơn hàng
 const totalAmount = computed(() =>
-  orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 )
 
 const isWelcome = ref(true)
 
 function openOrderScreen() {
-  isWelcome.value = false
-  let inactivityTimer
+    isWelcome.value = false
+    let inactivityTimer
 
-  function resetInactivityTimer() {
-    clearTimeout(inactivityTimer)
-    inactivityTimer = setTimeout(() => {
-      isWelcome.value = true
-      orderItems.value = []
-      showPayment.value = false
-    }, 1000000)
-  }
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer)
+        inactivityTimer = setTimeout(() => {
+            isWelcome.value = true
+            orderItems.value = []
+            orderNumber = ''
+            orderId = ''
+            qrImage = ''
+            content = ''
+            showPayment.value = false
+        }, 60000)
+    }
 
-  window.addEventListener('click', resetInactivityTimer)
-  window.addEventListener('touchstart', resetInactivityTimer)
-  resetInactivityTimer()
+    window.addEventListener('click', resetInactivityTimer)
+    window.addEventListener('touchstart', resetInactivityTimer)
+    resetInactivityTimer()
 }
 
 // Hàm thêm món vào giỏ hàng
@@ -136,12 +128,20 @@ function decreaseQuantity(item) {
     else if (found && found.quantity === 1) orderItems.value = orderItems.value.filter(i => i.id !== item.id)
 }
 
+function openPaymentModal(orderNo, amount, id) {
+    orderNumber = orderNo
+    if (id) orderId = id
+    qrImage = buildQrImage(amount, orderNumber)
+    showPayment.value = true
+}
+
 //{ shopCode?: string, note?: string, items: Array<{ foodId: number, quantity: number }> }
 async function createOrder() {
     if (!orderItems.value.length) return
 
     const orderParam = {
-        shopCode: 'SH123',
+        shopCode: SHOP_CODE,
+        deviceCode: DEVICE_CODE,
         note: 'No special requests',
         items: orderItems.value.map(item => ({
             foodId: Number(item.id),
@@ -149,49 +149,74 @@ async function createOrder() {
         })),
     }
 
-    const status = await submitOrder(orderParam)
-    if (status === 'success' || (status && status.id)) {
-        orderItems.value = []
-        showPayment.value = false
-        isWelcome.value = true
+    // Nếu đã có mã đơn hàng, cập nhật chi tiết
+    if (orderId) {
+        const result = await updateExistingOrder(orderId, orderParam)
+        console.log('Order update result:', result)
+        if (result === 'success' || (result && result.id)) {
+            openPaymentModal(result.orderNumber, result.totalPrice)
+        }
+    } else {
+        const result = await submitOrder(orderParam)
+        console.log('Order submission result:', result)
+        if (result === 'success' || (result && result.id)) {
+            orderId = result.id
+            openPaymentModal(result.orderNumber, result.totalPrice)
+        }
     }
-
 }
+
+function handlePaid() {
+    setTimeout(() => {
+        showPayment.value = false
+        orderItems.value = []
+        orderNumber = ''
+        orderId = ''
+        isWelcome.value = true
+    }, 10000) // 10 giây sau khi thanh toán
+}
+
 </script>
 
 <style scoped>
 .menu-scroll {
-    max-height: calc(100vh - 60px); /* trừ header và footer */
+    max-height: calc(100vh - 60px);
+    /* trừ header và footer */
     overflow-y: auto;
     border: 13px solid var(--nature-green);
-    scrollbar-width: none; /* Firefox */
+    scrollbar-width: none;
+    /* Firefox */
 }
+
 .menu-scroll::-webkit-scrollbar {
-    display: none; /* Chrome, Safari */
+    display: none;
+    /* Chrome, Safari */
 }
 
 h1.title {
-  padding-bottom: 10px;
-  padding-top: 10px;
-  background: var(--nature-green);
+    padding-bottom: 10px;
+    padding-top: 10px;
+    background: var(--nature-green);
 }
 
 .drop-enter-active {
-  animation: drop-in 1s cubic-bezier(.25,1.7,.5,1.15);
+    animation: drop-in 1s cubic-bezier(.25, 1.7, .5, 1.15);
 }
+
 @keyframes drop-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-80px) scale(0.98);
-  }
-  80% {
-    opacity: 1;
-    transform: translateY(10px) scale(1.01);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+    0% {
+        opacity: 0;
+        transform: translateY(-80px) scale(0.98);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(10px) scale(1.01);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 </style>
-

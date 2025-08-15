@@ -17,7 +17,3 @@ export const formatCurrencyVND = (value, options = {}) => {
     })
     return formatter.format(amount)
 }
-
-export default {
-    formatCurrencyVND
-}

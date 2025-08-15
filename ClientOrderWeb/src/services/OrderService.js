@@ -21,3 +21,26 @@ export async function submitOrder(orderItems) {
     }
     throw new Error(res.data?.message || 'Failed to submit order')
 }
+
+// Cập nhật đơn hàng hiện tại
+export async function updateExistingOrder(orderId, payload) {
+    // payload: { note?: string, items?: [{ foodId, quantity }] }
+    if (!orderId) throw new Error('orderId is required')
+    const res = await axios.patch(`orders/${orderId}/details`, payload)
+    if (res.data?.success === true) {
+        return res.data.data
+    }
+    throw new Error(res.data?.message || 'Failed to update order')
+}
+
+// Kiểm tra trạng thái thanh toán
+export async function getPaymentStatus(orderId) {
+    if (!orderId) throw new Error('orderId is required')
+    const res = await axios.get(`orders/${orderId}/payment-status`)
+    if (res.data?.success === true) {
+        return !!res.data.data?.paid
+    }
+    throw new Error(res.data?.message || 'Failed to get payment status')
+}
+
+
