@@ -14,6 +14,7 @@ const Food = require('./models/food.model')(sequelize, DataTypes);
 const MenuFood = require('./models/menuFood.model')(sequelize, DataTypes);
 const Order = require('./models/order.model')(sequelize, DataTypes);
 const OrderFood = require('./models/orderFood.model')(sequelize, DataTypes);
+const PaymentTransaction = require('./models/paymentTransaction.model')(sequelize, DataTypes);
 
 // Associations (Many-to-Many)
 Menu.belongsToMany(Food, { through: MenuFood, foreignKey: 'menu_id', otherKey: 'food_id', as: 'food' });
@@ -92,4 +93,5 @@ module.exports = {
     MenuFood,
     Order,
     OrderFood,
+    PaymentTransaction,
 }

@@ -25,7 +25,7 @@ function setupSocket(server) {
 // ========== Emit helpers (dùng trong controller/service) ==========
 function emitOrderNumbers(shopId, data) {
     if (!ioInstance) return;
-    ioInstance.to(shopId).emit('orderNumbers', data);
+    ioInstance.to(shopId).emit('orders', data);
 }
 
 module.exports = {

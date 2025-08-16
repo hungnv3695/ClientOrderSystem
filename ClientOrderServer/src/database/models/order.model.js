@@ -1,4 +1,5 @@
 // src/database/models/order.model.js
+const { ORDER_STATUS, PAYMENT_STATUS } = require('../../constants/order.constants');
 module.exports = (sequelize, DataTypes) => {
     const Order = sequelize.define(
         'Order',
@@ -14,16 +15,17 @@ module.exports = (sequelize, DataTypes) => {
                 unique: true,
                 field: 'order_number',
             },
+            // Received | Processing | Completed | Delivered | Cancelled
             status: {
-                type: DataTypes.STRING(20), // Waiting | Completed | Cancelled
+                type: DataTypes.STRING(20),
                 allowNull: false,
-                defaultValue: 'Waiting',
+                defaultValue: ORDER_STATUS.RECEIVED,
             },
             // Trạng thái thanh toán: Unpaid | Paid | Refunded
             paymentStatus: {
                 type: DataTypes.STRING(20),
                 allowNull: false,
-                defaultValue: 'Unpaid',
+                defaultValue: PAYMENT_STATUS.UNPAID,
                 field: 'payment_status',
             },
             totalPrice: {
