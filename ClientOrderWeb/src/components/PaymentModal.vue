@@ -70,6 +70,7 @@ async function startPolling() {
         try {
             const status = await getPaymentStatus(props.orderId)
             if (status) {
+                // Đặt paid, emit sự kiện
                 paid.value = true
                 emit('paid')
                 clearTimers()

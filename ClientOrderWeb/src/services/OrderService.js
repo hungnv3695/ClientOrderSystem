@@ -38,9 +38,32 @@ export async function getPaymentStatus(orderId) {
     if (!orderId) throw new Error('orderId is required')
     const res = await axios.get(`orders/${orderId}/payment-status`)
     if (res.data?.success === true) {
+        console.log('Payment status:', res.data.data.paid)
         return !!res.data.data?.paid
     }
     throw new Error(res.data?.message || 'Failed to get payment status')
+}
+
+// Tìm kiếm đơn hàng (manager)
+export async function searchOrders(query) {
+    const res = await axios.get('orders/search', { params: query })
+    if (res.data?.success === true) {
+        return {
+            rows: res.data?.data?.rows || [],
+            count: res.data?.data?.count || 0,
+        }
+    }
+    return { rows: [], count: 0 }
+}
+
+// Tạo receipt cho 1 order
+export async function createReceipt(orderId, data = {}) {
+    if (!orderId) throw new Error('orderId is required')
+    const res = await axios.post(`receipts/${orderId}`, data)
+    if (res.data?.success === true) {
+        return res.data.data // { receipt, items }
+    }
+    throw new Error(res.data?.message || 'Failed to create receipt')
 }
 
 

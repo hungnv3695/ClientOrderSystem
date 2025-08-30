@@ -1,11 +1,4 @@
-const {
-    createOrders,
-    getOrderNumbersForDashboard,
-    getOrdersByStatus,
-    updateOrderStatus,
-    updateOrderDetails,
-    isOrderPaid
-} = require('../services/OrderService');
+const { createOrders, getOrderNumbersForDashboard, getOrdersByStatus, updateOrderStatus, updateOrderDetails, isOrderPaid, searchOrders } = require('../services/OrderService');
 const { emitOrderNumbers } = require('../socket');
 
 exports.getOrderNumbers = async (req, res) => {
@@ -35,7 +28,7 @@ exports.createOrder = async (req, res) => {
         console.error(e);
         res.status(500).json({ success: false, message: 'Internal Server Error' });
     }
-}
+};
 
 exports.updateStatus = async (req, res) => {
     try {
@@ -57,7 +50,7 @@ exports.updateStatus = async (req, res) => {
         console.error(e);
         res.status(500).json({ success: false, message: e.message || 'Internal Server Error' });
     }
-}
+};
 
 exports.updateDetails = async (req, res) => {
     try {
@@ -86,6 +79,18 @@ exports.getPaymentStatus = async (req, res) => {
         if (!id) return res.status(400).json({ success: false, message: 'Missing order id' });
         const paid = await isOrderPaid(id);
         res.json({ success: true, data: { paid } });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message || 'Internal Server Error' });
+    }
+};
+
+exports.search = async (req, res) => {
+    try {
+        // Hỗ trợ nhận filter từ query string hoặc body (ưu tiên query)
+        const filters = Object.keys(req.query || {}).length ? req.query : (req.body || {});
+        const result = await searchOrders(filters);
+        res.json({ success: true, data: result });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: e.message || 'Internal Server Error' });

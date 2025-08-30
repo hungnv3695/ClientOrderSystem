@@ -1,0 +1,214 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+          xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+          xmlns:html="http://www.w3.org/TR/REC-html40">
+  <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+    <Author>GitHub Copilot</Author>
+    <LastAuthor>GitHub Copilot</LastAuthor>
+    <Created>2025-08-23T00:00:00Z</Created>
+    <Version>1.0</Version>
+  </DocumentProperties>
+  <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+    <WindowHeight>8130</WindowHeight>
+    <WindowWidth>15135</WindowWidth>
+    <WindowTopX>120</WindowTopX>
+    <WindowTopY>45</WindowTopY>
+    <ProtectStructure>False</ProtectStructure>
+    <ProtectWindows>False</ProtectWindows>
+  </ExcelWorkbook>
+
+  <Styles>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1"/>
+    </Style>
+    <Style ss:ID="TableName">
+      <Font ss:Bold="1" ss:Size="12"/>
+    </Style>
+  </Styles>
+
+  <Worksheet ss:Name="DatabaseSchema">
+    <Table>
+      <!-- Columns: Table name rows then metadata rows -->
+
+      <!-- MENU -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: menu</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK, autoIncrement</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">name</Data></Cell><Cell><Data ss:Type="String">VARCHAR(200)</Data></Cell><Cell><Data ss:Type="String">name</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">description</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">description</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- FOOD -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: food</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">name</Data></Cell><Cell><Data ss:Type="String">VARCHAR(200)</Data></Cell><Cell><Data ss:Type="String">name</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">price</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">price</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">description</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">description</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">image</Data></Cell><Cell><Data ss:Type="String">VARCHAR(255)</Data></Cell><Cell><Data ss:Type="String">image</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">is_active</Data></Cell><Cell><Data ss:Type="String">BOOLEAN</Data></Cell><Cell><Data ss:Type="String">is_active</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">true</Data></Cell><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- MENU_FOOD -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: menu_food</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">menu_id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">menu_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> menu.id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">food_id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">food_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> food.id</Data></Cell><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- ORDER -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: order</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">order_number</Data></Cell><Cell><Data ss:Type="String">VARCHAR(50)</Data></Cell><Cell><Data ss:Type="String">order_number</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">UNIQUE</Data></Cell><Cell>indexed</Cell></Row>
+      <Row><Cell><Data ss:Type="String">status</Data></Cell><Cell><Data ss:Type="String">VARCHAR(20)</Data></Cell><Cell><Data ss:Type="String">status</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">Received</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">payment_status</Data></Cell><Cell><Data ss:Type="String">VARCHAR(20)</Data></Cell><Cell><Data ss:Type="String">payment_status</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">Unpaid</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">total_price</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">total_price</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">note</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">note</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- ORDER_FOOD -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: order_food</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">order_id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">order_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> order.id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">food_id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">food_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> food.id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">quantity</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">quantity</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">1</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">unit_price</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">unit_price</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0</Data></Cell><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- RECEIPT -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: receipt</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">receipt_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">receipt_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">order_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">order_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> order.id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">receipt_number</Data></Cell><Cell><Data ss:Type="String">VARCHAR(50)</Data></Cell><Cell><Data ss:Type="String">receipt_number</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">UNIQUE</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">total_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">total_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">discount_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">discount_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">tax_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">tax_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">final_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">final_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">paid_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">paid_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">change_amount</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">change_amount</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">payment_method</Data></Cell><Cell><Data ss:Type="String">ENUM</Data></Cell><Cell><Data ss:Type="String">payment_method</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">cash</Data></Cell><Cell/><Cell>values: cash, card, ewallet, bank_transfer</Cell></Row>
+      <Row><Cell><Data ss:Type="String">paid_at</Data></Cell><Cell><Data ss:Type="String">DATE</Data></Cell><Cell><Data ss:Type="String">paid_at</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">cashier_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">cashier_id</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> users.id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">status</Data></Cell><Cell><Data ss:Type="String">ENUM</Data></Cell><Cell><Data ss:Type="String">status</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">Unpaid</Data></Cell><Cell/><Cell>values: Unpaid, Paid, Refunded</Cell></Row>
+      <Row><Cell><Data ss:Type="String">notes</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">notes</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- RECEIPT_ITEM -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: receipt_item</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">receipt_item_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">receipt_item_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">receipt_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">receipt_id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> receipt.receipt_id</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">item_id</Data></Cell><Cell><Data ss:Type="String">BIGINT</Data></Cell><Cell><Data ss:Type="String">item_id</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell><Data ss:Type="String">FK -> food.id (optional)</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">item_name</Data></Cell><Cell><Data ss:Type="String">VARCHAR(255)</Data></Cell><Cell><Data ss:Type="String">item_name</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">qty</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">qty</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">unit_price</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">unit_price</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">total_price</Data></Cell><Cell><Data ss:Type="String">DECIMAL(12,2)</Data></Cell><Cell><Data ss:Type="String">total_price</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row/><Row/>
+
+      <!-- USERS -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: users</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">username</Data></Cell><Cell><Data ss:Type="String">VARCHAR(50)</Data></Cell><Cell><Data ss:Type="String">username</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">UNIQUE</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">password_hash</Data></Cell><Cell><Data ss:Type="String">VARCHAR(255)</Data></Cell><Cell><Data ss:Type="String">password_hash</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">role</Data></Cell><Cell><Data ss:Type="String">VARCHAR(20)</Data></Cell><Cell><Data ss:Type="String">role</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">staff</Data></Cell><Cell/><Cell>values: staff, manager</Cell></Row>
+      <Row/><Row/>
+
+      <!-- PAYMENT_TRANSACTIONS -->
+      <Row ss:StyleID="TableName"><Cell><Data ss:Type="String">Table: payment_transactions</Data></Cell></Row>
+      <Row ss:StyleID="Header">
+        <Cell><Data ss:Type="String">Column</Data></Cell>
+        <Cell><Data ss:Type="String">Type</Data></Cell>
+        <Cell><Data ss:Type="String">DB Field</Data></Cell>
+        <Cell><Data ss:Type="String">Nullable</Data></Cell>
+        <Cell><Data ss:Type="String">Default</Data></Cell>
+        <Cell><Data ss:Type="String">PK / FK</Data></Cell>
+        <Cell><Data ss:Type="String">Notes / Index</Data></Cell>
+      </Row>
+      <Row><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">INTEGER</Data></Cell><Cell><Data ss:Type="String">id</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell><Data ss:Type="String">PK</Data></Cell><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">gateway</Data></Cell><Cell><Data ss:Type="String">VARCHAR(100)</Data></Cell><Cell><Data ss:Type="String">gateway</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">transaction_date</Data></Cell><Cell><Data ss:Type="String">DATE</Data></Cell><Cell><Data ss:Type="String">transaction_date</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">account_number</Data></Cell><Cell><Data ss:Type="String">VARCHAR(100)</Data></Cell><Cell><Data ss:Type="String">account_number</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">sub_account</Data></Cell><Cell><Data ss:Type="String">VARCHAR(250)</Data></Cell><Cell><Data ss:Type="String">sub_account</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">amount_in</Data></Cell><Cell><Data ss:Type="String">DECIMAL(20,2)</Data></Cell><Cell><Data ss:Type="String">amount_in</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">amount_out</Data></Cell><Cell><Data ss:Type="String">DECIMAL(20,2)</Data></Cell><Cell><Data ss:Type="String">amount_out</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">accumulated</Data></Cell><Cell><Data ss:Type="String">DECIMAL(20,2)</Data></Cell><Cell><Data ss:Type="String">accumulated</Data></Cell><Cell><Data ss:Type="String">NO</Data></Cell><Cell><Data ss:Type="String">0.00</Data></Cell><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">code</Data></Cell><Cell><Data ss:Type="String">VARCHAR(250)</Data></Cell><Cell><Data ss:Type="String">code</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">transaction_content</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">transaction_content</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">reference_number</Data></Cell><Cell><Data ss:Type="String">VARCHAR(255)</Data></Cell><Cell><Data ss:Type="String">reference_number</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+      <Row><Cell><Data ss:Type="String">body</Data></Cell><Cell><Data ss:Type="String">TEXT</Data></Cell><Cell><Data ss:Type="String">body</Data></Cell><Cell><Data ss:Type="String">YES</Data></Cell><Cell/><Cell/><Cell/></Row>
+
+    </Table>
+  </Worksheet>
+</Workbook>

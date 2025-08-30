@@ -207,6 +207,134 @@ async function isOrderPaid(orderId) {
     return !!(order && order.paymentStatus === PAYMENT_STATUS.PAID);
 }
 
+/**
+ * Tìm kiếm đơn hàng theo điều kiện.
+ * Hỗ trợ: khoảng ngày tạo (fromDate/toDate), khoảng tổng tiền (minTotal/maxTotal), status, paymentStatus, phân trang và sắp xếp.
+ * @param {{ fromDate?: string, toDate?: string, minTotal?: number, maxTotal?: number, status?: string[]|string, paymentStatus?: string[]|string, page?: number, pageSize?: number, sortBy?: string, sortOrder?: 'ASC'|'DESC' }} filters
+ * @returns {Promise<{ rows: any[], count: number, page: number, pageSize: number }>}
+ */
+async function searchOrders(filters = {}) {
+    const where = {};
+
+    // Ngày tạo: fromDate/toDate dạng 'yyyymmdd'
+    const { fromDate, toDate } = filters;
+    if (fromDate || toDate) {
+        const updatedAt = {};
+        const start = parseDateValue(fromDate, false);
+        const end = parseDateValue(toDate, true);
+        if (start) updatedAt[Op.gte] = start;
+        if (end) updatedAt[Op.lte] = end;
+        if (start || end) where.updatedAt = updatedAt;
+    }
+
+    // Tổng tiền: minTotal/maxTotal (chấp nhận string/number, bỏ qua chuỗi rỗng)
+    const minRaw = typeof filters.minTotal === 'string' ? filters.minTotal.trim() : filters.minTotal;
+    const maxRaw = typeof filters.maxTotal === 'string' ? filters.maxTotal.trim() : filters.maxTotal;
+    const hasMin = minRaw !== undefined && minRaw !== null && minRaw !== '';
+    const hasMax = maxRaw !== undefined && maxRaw !== null && maxRaw !== '';
+    const minTotal = hasMin ? Math.trunc(Number(minRaw)) : undefined;
+    const maxTotal = hasMax ? Math.trunc(Number(maxRaw)) : undefined;
+    if ((hasMin && Number.isFinite(minTotal)) || (hasMax && Number.isFinite(maxTotal))) {
+        const total = {};
+        if (hasMin && Number.isFinite(minTotal)) total[Op.gte] = minTotal;
+        if (hasMax && Number.isFinite(maxTotal)) total[Op.lte] = maxTotal;
+        where.totalPrice = total;
+    }
+
+    // Trạng thái đơn hàng
+    const allowedStatuses = Object.values(ORDER_STATUS);
+    const statuses = Array.isArray(filters.status)
+        ? filters.status
+        : (typeof filters.status === 'string' ? filters.status.split(',').map(s => s.trim()).filter(Boolean) : undefined);
+    if (statuses && statuses.length) {
+        const valid = statuses.filter(s => allowedStatuses.includes(s));
+        if (valid.length === 1) where.status = valid[0];
+        else if (valid.length > 1) where.status = { [Op.in]: valid };
+    }
+
+    // Trạng thái thanh toán
+    const allowedPays = Object.values(PAYMENT_STATUS);
+    const pays = Array.isArray(filters.paymentStatus)
+        ? filters.paymentStatus
+        : (typeof filters.paymentStatus === 'string' ? filters.paymentStatus.split(',').map(s => s.trim()).filter(Boolean) : undefined);
+    if (pays && pays.length) {
+        const valid = pays.filter(p => allowedPays.includes(p));
+        if (valid.length === 1) where.paymentStatus = valid[0];
+        else if (valid.length > 1) where.paymentStatus = { [Op.in]: valid };
+    }
+
+    // Phân trang + sắp xếp
+    const page = Number(filters.page) > 0 ? Number(filters.page) : 1;
+    const pageSize = Number(filters.pageSize) > 0 ? Number(filters.pageSize) : 50;
+    const offset = (page - 1) * pageSize;
+
+    const sortable = new Set(['updatedAt', 'totalPrice', 'orderNumber']);
+    const sortBy = sortable.has(filters.sortBy) ? filters.sortBy : 'updatedAt';
+    const sortOrder = (filters.sortOrder === 'ASC' || filters.sortOrder === 'DESC') ? filters.sortOrder : 'DESC';
+
+
+    const { rows, count } = await Order.findAndCountAll({
+        where,
+        attributes: ['id', 'orderNumber', 'status', 'paymentStatus', 'totalPrice', 'note', 'createdAt', 'updatedAt'],
+        include: [
+            {
+                model: Food,
+                as: 'foods',
+                attributes: ['id', 'name', 'price'],
+                through: { attributes: ['quantity', 'unitPrice'] },
+            },
+        ],
+        order: [[sortBy, sortOrder]],
+        limit: pageSize,
+        offset,
+        distinct: true,
+    });
+
+    // Map về dạng gọn: items [{ name, quantity, price }]
+    const mappedRows = rows.map(r => {
+        const o = typeof r.get === 'function' ? r.get({ plain: true }) : r;
+        const items = (o.foods || []).map(f => ({
+            name: f.name,
+            quantity: f?.OrderFood?.quantity ?? 0,
+            price: (f?.OrderFood?.unitPrice ?? f.price ?? 0),
+        }));
+        delete o.foods;
+        return { ...o, items };
+    });
+
+    return { rows: mappedRows, count, page, pageSize };
+}
+
+/**
+ * Parse chuỗi ngày định dạng 'YYYYMMDD' về đối tượng Date ở đầu hoặc cuối ngày.
+ * Chỉ chấp nhận đúng định dạng 8 chữ số. Ví dụ hợp lệ: '20250817'.
+ * @param {string} value Chuỗi ngày 'YYYYMMDD'
+ * @param {boolean} endOfDay true => 23:59:59.999, false => 00:00:00.000
+ * @returns {Date|null}
+ */
+function parseDateValue(value, endOfDay = false) {
+    if (typeof value !== 'string') return null;
+    const s = value.trim();
+    if (!/^\d{8}$/.test(s)) return null; // chỉ chấp nhận YYYYMMDD
+
+    const yyyy = Number(s.slice(0, 4));
+    const mm = Number(s.slice(4, 6)) - 1; // 0-based
+    const dd = Number(s.slice(6, 8));
+
+    const d = new Date(yyyy, mm, dd);
+    // Xác thực ngày hợp lệ (tránh auto-roll sang tháng khác)
+    if (
+        d.getFullYear() !== yyyy ||
+        d.getMonth() !== mm ||
+        d.getDate() !== dd
+    ) {
+        return null;
+    }
+
+    if (endOfDay) d.setHours(23, 59, 59, 999); else d.setHours(0, 0, 0, 0);
+    return d;
+}
+
 module.exports = {
     createOrders,
     getOrdersByStatus,
@@ -214,4 +342,5 @@ module.exports = {
     updateOrderStatus,
     updateOrderDetails,
     isOrderPaid,
+    searchOrders,
 }

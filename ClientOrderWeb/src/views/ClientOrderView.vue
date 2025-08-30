@@ -3,7 +3,8 @@
         <BRow class="text-center">
             <BCol />
             <BCol cols="auto" align-self="stretch">
-                <BButton class="btn-nature" size="lg" @click="openOrderScreen">Gọi món</BButton>
+
+                <BButton class="pill-order-btn" size="lg" @click="openOrderScreen">Gọi món</BButton>
             </BCol>
             <BCol />
         </BRow>
@@ -11,9 +12,12 @@
 
     <transition name="drop">
         <BContainer v-if="!isWelcome" fluid class="min-vh-100 d-flex flex-column nature-bg">
-            <BRow>
-                <BCol align-self="center">
-                    <h1 class="h1-screen-title title">Gọi món</h1>
+            <BRow class="nature-bg align-items-center order-header">
+                <BCol class="position-relative text-center">
+                    <BButton class="header-back-btn" @click="resetToWelcome" title="Quay lại">
+                        <i class="bi bi-arrow-left"></i>
+                    </BButton>
+                    <h1 class="h1-screen-title title m-0">Gọi món</h1>
                 </BCol>
             </BRow>
             <BRow class="nature-bg flex-grow-1 h-100" style="min-height:0;">
@@ -44,8 +48,9 @@
 
 import { ref, computed, onMounted } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
-import { fetchMenu, submitOrder, updateExistingOrder } from '../services/OrderService.js'
+import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
 import { SHOP_CODE, DEVICE_CODE, buildQrImage } from '../config/appConfig.js'
+import { printReceipt } from '../services/PrinterService.js'
 
 const menuItems = ref([])
 
@@ -56,36 +61,49 @@ onMounted(async () => {
 
 const orderItems = ref([])
 const showPayment = ref(false)
-var qrImage = ''; // Đường dẫn ảnh QR code demo, thay bằng ảnh thật nếu cần
-var content = ''; // Nội dung thanh toán
-var orderNumber = ''; // Mã đơn hàng
+var qrImage = '' // Đường dẫn ảnh QR code demo, thay bằng ảnh thật nếu cần
+var content = '' // Nội dung thanh toán
+var orderNumber = '' // Mã đơn hàng
 let orderId = '' // ID đơn hàng
 const totalAmount = computed(() =>
     orderItems.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
 )
 
 const isWelcome = ref(true)
+let inactivityTimer = null
+
+function resetToWelcome() {
+    // Xóa timer và bỏ đăng ký sự kiện
+    if (inactivityTimer) clearTimeout(inactivityTimer)
+    inactivityTimer = null
+    window.removeEventListener('click', onActivity)
+    window.removeEventListener('touchstart', onActivity)
+
+    // Đưa UI về trạng thái ban đầu
+    isWelcome.value = true
+    orderItems.value = []
+    orderNumber = ''
+    orderId = ''
+    qrImage = ''
+    content = ''
+    showPayment.value = false
+}
+
+function onActivity() {
+    if (inactivityTimer) clearTimeout(inactivityTimer)
+    inactivityTimer = setTimeout(() => {
+        resetToWelcome()
+    }, 60000)
+}
 
 function openOrderScreen() {
     isWelcome.value = false
-    let inactivityTimer
-
-    function resetInactivityTimer() {
-        clearTimeout(inactivityTimer)
-        inactivityTimer = setTimeout(() => {
-            isWelcome.value = true
-            orderItems.value = []
-            orderNumber = ''
-            orderId = ''
-            qrImage = ''
-            content = ''
-            showPayment.value = false
-        }, 60000)
-    }
-
-    window.addEventListener('click', resetInactivityTimer)
-    window.addEventListener('touchstart', resetInactivityTimer)
-    resetInactivityTimer()
+    // Đảm bảo không nhân đôi listener
+    window.removeEventListener('click', onActivity)
+    window.removeEventListener('touchstart', onActivity)
+    window.addEventListener('click', onActivity)
+    window.addEventListener('touchstart', onActivity)
+    onActivity()
 }
 
 // Hàm thêm món vào giỏ hàng
@@ -144,6 +162,8 @@ async function createOrder() {
         deviceCode: DEVICE_CODE,
         note: 'No special requests',
         items: orderItems.value.map(item => ({
+            name: item.name,
+            price: item.price,
             foodId: Number(item.id),
             quantity: Number(item.quantity) || 1,
         })),
@@ -166,14 +186,22 @@ async function createOrder() {
     }
 }
 
-function handlePaid() {
+async function handlePaid() {
+    const receipt = await createReceipt(orderId, {
+        paymentMethod: 'bank_transfer',
+    })
+    // In hóa đơn nếu có máy in
+    if (receipt) {
+        await printReceipt('192.168.11.9', '8008', 'local_printer', receipt)
+    }
+
     setTimeout(() => {
         showPayment.value = false
         orderItems.value = []
         orderNumber = ''
         orderId = ''
         isWelcome.value = true
-    }, 10000) // 10 giây sau khi thanh toán
+    }, 5000) // 5 giây sau khi thanh toán
 }
 
 </script>
@@ -193,10 +221,40 @@ function handlePaid() {
     /* Chrome, Safari */
 }
 
+/* Header height */
+.order-header {
+    height: 72px;
+}
+
 h1.title {
     padding-bottom: 10px;
     padding-top: 10px;
     background: var(--nature-green);
+}
+
+/* Back button placed inside the title column (absolute on the left) */
+.header-back-btn {
+    position: absolute;
+    left: 17px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    background: var(--nature-green);
+    color: #000;
+    border: none;
+    padding-left: 10px;
+    border-radius: 0 !important;
+    /* square corners */
+}
+
+.header-back-btn:hover,
+.header-back-btn:active {
+    background: var(--nature-green-dark);
 }
 
 .drop-enter-active {

@@ -5,6 +5,8 @@
     --nature-green-soft: #B7C9A3;
     --nature-green-pale: #E3EEDC;
     --success-green: #198754;
+    --order-pill-green: #77C26B;
+    /* bright green for call-to-action button */
 }
 
 body,
@@ -51,4 +53,27 @@ div#app {
 .h1-screen-title {
     color: black;
 
+}
+
+/* Pill CTA button ("Gọi món") */
+.btn.pill-order-btn {
+    background: var(--order-pill-green) !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 9999px !important;
+    padding: 28px 72px !important;
+    /* doubled */
+    font-size: 2.5rem !important;
+    /* doubled */
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    min-width: 20px;
+}
+
+.btn.pill-order-btn:hover {
+    filter: brightness(1.05);
+}
+
+.btn.pill-order-btn:active {
+    transform: translateY(1px);
 }

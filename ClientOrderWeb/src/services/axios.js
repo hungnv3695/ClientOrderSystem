@@ -9,8 +9,15 @@ const instance = axios.create({
     },
 })
 
-// Thêm interceptor nếu cần (ví dụ: token, xử lý lỗi...)
-// instance.interceptors.request.use(config => { ... })
+instance.interceptors.request.use(config => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
+// Thêm interceptor nếu cần (ví dụ: xử lý lỗi...)
 // instance.interceptors.response.use(response => { ... })
 
 export default instance

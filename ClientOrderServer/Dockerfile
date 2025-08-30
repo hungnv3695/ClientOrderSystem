@@ -12,8 +12,8 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# 30000 port
-EXPOSE 30000
+# 3000 port
+EXPOSE 3000
 
 # run the application
 CMD ["npm", "run", "dev"]
