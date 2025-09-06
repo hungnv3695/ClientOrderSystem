@@ -58,7 +58,7 @@ class CompanyService {
             const sanitizedData = {
                 code: companyData.code.trim(),
                 name: companyData.name.trim(),
-                registration_number: companyData.registrationNumber?.trim() || '',
+                registration_number: companyData.registration_number?.trim() || '',
                 address: companyData.address?.trim() || '',
                 phone: companyData.phone?.trim() || '',
                 email: companyData.email?.trim() || '',
@@ -88,6 +88,15 @@ class CompanyService {
      * Cập nhật thông tin công ty
      * @param {number} id - ID công ty
      * @param {Object} companyData - Dữ liệu cập nhật
+     * @param {string} companyData.code - Mã công ty (bắt buộc)
+     * @param {string} companyData.name - Tên công ty (bắt buộc)
+     * @param {string} companyData.registration_number - Số đăng ký kinh doanh
+     * @param {string} companyData.address - Địa chỉ
+     * @param {string} companyData.phone - Số điện thoại
+     * @param {string} companyData.email - Email
+     * @param {string} companyData.website - Website
+     * @param {string} companyData.description - Mô tả
+     * @param {string} companyData.status - Trạng thái (active/inactive)
      * @returns {Promise<Object>} Thông tin công ty đã cập nhật
      */
     async updateCompany(id, companyData) {
@@ -108,7 +117,7 @@ class CompanyService {
             const sanitizedData = {
                 code: companyData.code.trim(),
                 name: companyData.name.trim(),
-                registrationNumber: companyData.registrationNumber?.trim() || '',
+                registration_number: companyData.registration_number?.trim() || '',
                 address: companyData.address?.trim() || '',
                 phone: companyData.phone?.trim() || '',
                 email: companyData.email?.trim() || '',
@@ -116,13 +125,52 @@ class CompanyService {
                 description: companyData.description?.trim() || ''
             }
 
+            // Add status if provided
+            if (companyData.status) {
+                if (!['active', 'inactive'].includes(companyData.status)) {
+                    throw new Error('Trạng thái phải là "active" hoặc "inactive"')
+                }
+                sanitizedData.status = companyData.status
+            }
+
             // Validate email format if provided
             if (sanitizedData.email && !this.isValidEmail(sanitizedData.email)) {
                 throw new Error('Định dạng email không hợp lệ')
             }
 
+            // Validate phone format if provided
+            // if (sanitizedData.phone && !this.isValidPhone(sanitizedData.phone)) {
+            //     throw new Error('Định dạng số điện thoại không hợp lệ')
+            // }
+
+            const response = await axios.put(`/company/${id}`, sanitizedData)
+            return response.data
         } catch (error) {
-            console.error('CompanyManagementService.updateCompany error:', error)
+            console.error('CompanyService.updateCompany error:', error)
+            throw this.handleApiError(error)
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái công ty
+     * @param {number} id - ID công ty
+     * @param {string} status - Trạng thái mới ('active' hoặc 'inactive')
+     * @returns {Promise<Object>} Kết quả cập nhật
+     */
+    async updateCompanyStatus(id, status) {
+        try {
+            if (!id || id < 1) {
+                throw new Error('ID công ty không hợp lệ')
+            }
+
+            if (!['active', 'inactive'].includes(status)) {
+                throw new Error('Trạng thái phải là "active" hoặc "inactive"')
+            }
+
+            const response = await axios.patch(`/company/${id}/status`, { status })
+            return response.data
+        } catch (error) {
+            console.error('CompanyService.updateCompanyStatus error:', error)
             throw this.handleApiError(error)
         }
     }
@@ -138,7 +186,7 @@ class CompanyService {
                 throw new Error('ID công ty không hợp lệ')
             }
 
-            const response = await axios.delete(`/api/manager/companies/${id}`)
+            const response = await axios.delete(`/company/${id}`)
             return response.data
         } catch (error) {
             console.error('CompanyManagementService.deleteCompany error:', error)
@@ -157,7 +205,7 @@ class CompanyService {
                 throw new Error('ID công ty không hợp lệ')
             }
 
-            const response = await axios.get(`/api/manager/companies/${id}`)
+            const response = await axios.get(`/company/${id}`)
             return response.data
         } catch (error) {
             console.error('CompanyManagementService.getCompanyById error:', error)
@@ -171,7 +219,7 @@ class CompanyService {
      */
     async getCompaniesForDropdown() {
         try {
-            const response = await axios.get('/api/manager/companies/dropdown')
+            const response = await axios.get('/company/dropdown')
             return response.data
         } catch (error) {
             console.error('CompanyManagementService.getCompaniesForDropdown error:', error)

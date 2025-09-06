@@ -1,8 +1,13 @@
 <template>
     <div class="col-md-6 col-lg-4">
         <BFormGroup :label="label + ':'" label-cols="4" label-align="start" :label-for="fieldId">
+            <!-- Select dropdown -->
+            <BFormSelect v-if="type === 'select'" :id="fieldId" :model-value="modelValue"
+                @update:model-value="$emit('update:modelValue', $event)" :options="options" size="sm" 
+                :placeholder="placeholder" />
+
             <!-- Regular input fields -->
-            <BFormInput v-if="type !== 'checkbox'" :id="fieldId" :model-value="modelValue"
+            <BFormInput v-else-if="type !== 'checkbox'" :id="fieldId" :model-value="modelValue"
                 @update:model-value="$emit('update:modelValue', $event)" :placeholder="placeholder" :type="type"
                 size="sm" />
 
@@ -19,7 +24,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { BFormGroup, BFormInput, BFormCheckbox } from 'bootstrap-vue-next'
+import { BFormGroup, BFormInput, BFormSelect, BFormCheckbox } from 'bootstrap-vue-next'
 
 // Props
 const props = defineProps({

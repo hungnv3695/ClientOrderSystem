@@ -28,18 +28,18 @@
         <SearchResultTable :items="shops" :fields="tableFields" :loading="loading" :total-records="totalRecords"
             v-model:current-page="currentPage" @page-change="handlePageChange" title="Kết quả tìm kiếm"
             record-unit="cửa hàng">
+            <template #cell(stt)="{ index }">
+                {{ (currentPage - 1) * perPage + index + 1 }}
+            </template>
+
+            <template #cell(created_at)="{ item }">
+                <span class="text-nowrap">{{ formatDateTime(item.created_at) }}</span>
+            </template>
+
             <template #cell(status)="{ item }">
-                <span :class="getStatusClass(item.status)">
+                <span :class="getStatusBadgeClass(item.status)">
                     {{ getStatusText(item.status) }}
                 </span>
-            </template>
-
-            <template #cell(createdAt)="{ item }">
-                <span class="text-nowrap">{{ formatDateTime(item.createdAt) }}</span>
-            </template>
-
-            <template #cell(updatedAt)="{ item }">
-                <span class="text-nowrap">{{ formatDateTime(item.updatedAt) }}</span>
             </template>
 
             <template #cell(actions)="{ item }">
@@ -57,17 +57,49 @@
         <!-- Edit Modal -->
         <EditModal v-model="showEditModal" :title="editModalTitle" :data="editingShop" :fields="editFields"
             :loading="editLoading" :errors="editErrors" @submit="handleSaveShop" @cancel="handleCancelEdit" />
+
+        <!-- Confirm Delete Modal -->
+        <ConfirmModal 
+            v-model="showDeleteModal" 
+            type="danger"
+            title="Xác nhận xóa"
+            :message="`Bạn có chắc chắn muốn xóa cửa hàng '${deletingShop?.name??''}'?`"
+            description="Thao tác này không thể hoàn tác."
+            confirm-text="Xác nhận"
+            cancel-text="Hủy"
+            :loading="deleteLoading"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
+        />
+
+        <!-- Confirm Save Modal -->
+        <ConfirmModal 
+            v-model="showSaveModal" 
+            type="info"
+            title="Xác nhận lưu"
+            :message="editingShop?.id ? 'Bạn có chắc chắn muốn cập nhật thông tin cửa hàng?' : 'Bạn có chắc chắn muốn tạo cửa hàng mới?'"
+            description="Vui lòng kiểm tra lại thông tin trước khi lưu."
+            confirm-text="Lưu"
+            cancel-text="Hủy"
+            :loading="editLoading"
+            @confirm="confirmSave"
+            @cancel="cancelSave"
+        />
     </ManagerLayout>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import ManagerLayout from '../../layouts/ManagerLayout.vue'
 import SearchForm from '../../components/SearchForm.vue'
 import SearchFormField from '../../components/SearchFormField.vue'
 import SearchResultTable from '../../components/SearchResultTable.vue'
 import EditModal from '../../components/EditModal.vue'
+import ConfirmModal from '../../components/ConfirmModal.vue'
 import { formatDateTime } from '../../utils/dateTime.js'
+import ShopService from '../../services/manager/ShopService.js'
+import CompanyService from '../../services/manager/CompanyService.js'
+import { STATUS_OPTIONS, getStatusText, getStatusBadgeClass } from '../../constants/app.constants.js'
 
 // Reactive data
 const loading = ref(false)
@@ -75,12 +107,22 @@ const shops = ref([])
 const totalRecords = ref(0)
 const currentPage = ref(1)
 const perPage = ref(20)
+const companies = ref([]) // For company dropdown
+const managers = ref([]) // For manager dropdown - mock data for now
+const isMounted = ref(false) // Track component mount state
 
 // Edit modal data
 const showEditModal = ref(false)
 const editLoading = ref(false)
 const editingShop = ref({})
 const editErrors = ref({})
+
+// Confirm modal data
+const showDeleteModal = ref(false)
+const showSaveModal = ref(false)
+const deleteLoading = ref(false)
+const deletingShop = ref({})
+const pendingSaveData = ref({})
 
 const searchForm = reactive({
     code: '',
@@ -94,184 +136,30 @@ const searchForm = reactive({
     createdAtTo: ''
 })
 
-// Mock data for shops
-const mockData = [
-    {
-        id: 1,
-        code: 'SH001',
-        name: 'Cửa hàng ABC Chi nhánh 1',
-        companyId: 1,
-        companyName: 'Công ty ABC',
-        address: '123 Nguyễn Văn Linh, Q.7, TP.HCM',
-        phone: '0123456789',
-        email: 'sh001@abc.com',
-        managerId: 1,
-        managerName: 'Nguyễn Văn A',
-        status: 'ACTIVE',
-        createdAt: '2025-01-15T10:30:00',
-        updatedAt: '2025-01-20T14:20:00'
-    },
-    {
-        id: 2,
-        code: 'SH002',
-        name: 'Cửa hàng ABC Chi nhánh 2',
-        companyId: 1,
-        companyName: 'Công ty ABC',
-        address: '456 Lê Văn Việt, Q.9, TP.HCM',
-        phone: '0987654321',
-        email: 'sh002@abc.com',
-        managerId: 2,
-        managerName: 'Trần Thị B',
-        status: 'ACTIVE',
-        createdAt: '2025-01-10T09:15:00',
-        updatedAt: '2025-01-18T16:45:00'
-    },
-    {
-        id: 3,
-        code: 'SH003',
-        name: 'Cửa hàng XYZ Hà Nội',
-        companyId: 2,
-        companyName: 'Công ty XYZ',
-        address: '789 Cầu Giấy, Hà Nội',
-        phone: '0456789123',
-        email: 'hanoi@xyz.com',
-        managerId: 3,
-        managerName: 'Lê Văn C',
-        status: 'ACTIVE',
-        createdAt: '2025-01-05T14:20:00',
-        updatedAt: '2025-01-15T11:30:00'
-    },
-    {
-        id: 4,
-        code: 'SH004',
-        name: 'Cửa hàng XYZ Đà Nẵng',
-        companyId: 2,
-        companyName: 'Công ty XYZ',
-        address: '321 Hải Châu, Đà Nẵng',
-        phone: '0789123456',
-        email: 'danang@xyz.com',
-        managerId: 4,
-        managerName: 'Phạm Thị D',
-        status: 'INACTIVE',
-        createdAt: '2025-01-12T08:45:00',
-        updatedAt: '2025-01-22T13:20:00'
-    },
-    {
-        id: 5,
-        code: 'SH005',
-        name: 'Cửa hàng DEF Cần Thơ',
-        companyId: 3,
-        companyName: 'Công ty DEF Ltd',
-        address: '654 Ninh Kiều, Cần Thơ',
-        phone: '0321654987',
-        email: 'cantho@def.com',
-        managerId: 5,
-        managerName: 'Hoàng Văn E',
-        status: 'ACTIVE',
-        createdAt: '2025-01-08T16:10:00',
-        updatedAt: '2025-01-19T10:15:00'
-    },
-    {
-        id: 6,
-        code: 'SH006',
-        name: 'Cửa hàng DEF Vũng Tàu',
-        companyId: 3,
-        companyName: 'Công ty DEF Ltd',
-        address: '987 Thùy Vân, Vũng Tàu',
-        phone: '0654987321',
-        email: 'vungtau@def.com',
-        managerId: 6,
-        managerName: 'Võ Thị F',
-        status: 'ACTIVE',
-        createdAt: '2025-01-03T12:00:00',
-        updatedAt: '2025-01-17T15:30:00'
-    },
-    {
-        id: 7,
-        code: 'SH007',
-        name: 'Cửa hàng GHI Nha Trang',
-        companyId: 4,
-        companyName: 'Tập đoàn GHI',
-        address: '159 Trần Phú, Nha Trang',
-        phone: '0159753486',
-        email: 'nhatrang@ghi.com',
-        managerId: 7,
-        managerName: 'Đặng Văn G',
-        status: 'ACTIVE',
-        createdAt: '2025-01-14T11:25:00',
-        updatedAt: '2025-01-21T09:45:00'
-    },
-    {
-        id: 8,
-        code: 'SH008',
-        name: 'Cửa hàng GHI Huế',
-        companyId: 4,
-        companyName: 'Tập đoàn GHI',
-        address: '753 Lê Lợi, Huế',
-        phone: '0753486159',
-        email: 'hue@ghi.com',
-        managerId: 8,
-        managerName: 'Bùi Thị H',
-        status: 'INACTIVE',
-        createdAt: '2025-01-07T13:40:00',
-        updatedAt: '2025-01-16T14:55:00'
-    },
-    {
-        id: 9,
-        code: 'SH009',
-        name: 'Cửa hàng JKL Quy Nhơn',
-        companyId: 5,
-        companyName: 'Công ty TNHH JKL',
-        address: '486 Nguyễn Huệ, Quy Nhơn',
-        phone: '0486159753',
-        email: 'quynhon@jkl.com',
-        managerId: 9,
-        managerName: 'Ngô Văn I',
-        status: 'ACTIVE',
-        createdAt: '2025-01-11T07:30:00',
-        updatedAt: '2025-01-20T12:10:00'
-    },
-    {
-        id: 10,
-        code: 'SH010',
-        name: 'Cửa hàng JKL Vinh',
-        companyId: 5,
-        companyName: 'Công ty TNHH JKL',
-        address: '951 Lê Mao, Vinh',
-        phone: '0951357246',
-        email: 'vinh@jkl.com',
-        managerId: 10,
-        managerName: 'Lý Thị K',
-        status: 'ACTIVE',
-        createdAt: '2025-01-09T15:20:00',
-        updatedAt: '2025-01-18T08:40:00'
-    }
-]
+// Mock data for shops - REMOVED: Will be replaced by API calls
+// const mockData = [...]
 
 // Status options for checkbox
-const statusOptions = [
-    { value: 'ACTIVE', text: 'Hoạt động' },
-    { value: 'INACTIVE', text: 'Ngừng hoạt động' }
-]
+const statusOptions = STATUS_OPTIONS
 
 // Table configuration
 const tableFields = [
-    { key: 'id', label: 'ID', sortable: true, thStyle: { width: '60px' } },
-    { key: 'code', label: 'Mã cửa hàng', sortable: true, thStyle: { width: '120px' } },
-    { key: 'name', label: 'Tên cửa hàng', sortable: true },
+    { key: 'stt', label: 'STT', thStyle: { width: '60px', textAlign: 'center' }, tdClass: 'text-center' },
+    { key: 'id', label: 'ID', sortable: true, thStyle: { width: '60px' }, class: 'd-none', thClass: 'd-none', tdClass: 'd-none' },
+    { key: 'code', label: 'Mã', sortable: true, thStyle: { width: '120px' } },
+    { key: 'name', label: 'Tên ', sortable: true },
     { key: 'companyName', label: 'Công ty', sortable: true, thStyle: { width: '150px' } },
-    { key: 'address', label: 'Địa chỉ', thStyle: { width: '200px' } },
+    { key: 'address', label: 'Địa chỉ', thStyle: { width: '120px' } },
     { key: 'phone', label: 'Điện thoại', thStyle: { width: '120px' } },
     { key: 'email', label: 'Email', thStyle: { width: '180px' } },
     { key: 'managerName', label: 'Quản lý', thStyle: { width: '120px' } },
+    { key: 'created_at', label: 'Ngày tạo', sortable: true, thStyle: { width: '140px' } },
     { key: 'status', label: 'Trạng thái', sortable: true, thStyle: { width: '100px' } },
-    { key: 'createdAt', label: 'Ngày tạo', sortable: true, thStyle: { width: '160px', whiteSpace: 'nowrap' } },
-    { key: 'updatedAt', label: 'Cập nhật', sortable: true, thStyle: { width: '160px', whiteSpace: 'nowrap' } },
     { key: 'actions', label: 'Thao tác', thStyle: { width: '120px' } }
 ]
 
 // Edit modal configuration
-const editFields = [
+const editFields = ref([
     {
         key: 'code',
         label: 'Mã cửa hàng',
@@ -292,14 +180,7 @@ const editFields = [
         key: 'companyId',
         label: 'Công ty',
         type: 'select',
-        options: [
-            { value: '', text: 'Chọn công ty' },
-            { value: 1, text: 'Công ty ABC' },
-            { value: 2, text: 'Công ty XYZ' },
-            { value: 3, text: 'Công ty DEF Ltd' },
-            { value: 4, text: 'Tập đoàn GHI' },
-            { value: 5, text: 'Công ty TNHH JKL' }
-        ],
+        options: [{ value: '', text: 'Chọn công ty' }], // Will be updated dynamically
         required: true,
         colClass: 'col-md-6'
     },
@@ -307,15 +188,8 @@ const editFields = [
         key: 'managerId',
         label: 'Quản lý',
         type: 'select',
-        options: [
-            { value: '', text: 'Chọn quản lý' },
-            { value: 1, text: 'Nguyễn Văn A' },
-            { value: 2, text: 'Trần Thị B' },
-            { value: 3, text: 'Lê Văn C' },
-            { value: 4, text: 'Phạm Thị D' },
-            { value: 5, text: 'Hoàng Văn E' }
-        ],
-        required: true,
+        options: [{ value: '', text: 'Chọn quản lý' }], // Will be updated dynamically
+        required: false,
         colClass: 'col-md-6'
     },
     {
@@ -345,14 +219,11 @@ const editFields = [
         key: 'status',
         label: 'Trạng thái',
         type: 'select',
-        options: [
-            { value: 'ACTIVE', text: 'Hoạt động' },
-            { value: 'INACTIVE', text: 'Ngừng hoạt động' }
-        ],
+        options: STATUS_OPTIONS,
         required: true,
         colClass: 'col-md-6'
     }
-]
+])
 
 // Computed
 const totalPages = computed(() => Math.ceil(totalRecords.value / perPage.value))
@@ -362,13 +233,8 @@ const editModalTitle = computed(() => {
 })
 
 // Methods
-const getStatusClass = (status) => {
-    return status === 'ACTIVE' ? 'badge bg-success' : 'badge bg-secondary'
-}
-
-const getStatusText = (status) => {
-    return status === 'ACTIVE' ? 'Hoạt động' : 'Ngừng hoạt động'
-}
+// Methods - Use imported functions from constants
+// const getStatusClass and getStatusText are imported from constants
 
 const handleSearch = async () => {
     loading.value = true
@@ -376,6 +242,7 @@ const handleSearch = async () => {
         await searchShops()
     } catch (error) {
         console.error('Search error:', error)
+        // Error already handled in searchShops function
     } finally {
         loading.value = false
     }
@@ -399,6 +266,10 @@ const handlePageChange = (page) => {
 }
 
 const handleEdit = (shop) => {
+    if (!shop || !shop.id) {
+        console.error('Invalid shop data for edit')
+        return
+    }
     editingShop.value = { ...shop }
     editErrors.value = {}
     showEditModal.value = true
@@ -411,49 +282,100 @@ const handleAddNew = () => {
 }
 
 const handleDelete = (shop) => {
-    // TODO: Show confirmation dialog and delete
-    console.log('Delete shop:', shop)
+    if (!shop || !shop.id) {
+        console.error('Invalid shop data for delete')
+        return
+    }
+    
+    deletingShop.value = shop
+    showDeleteModal.value = true
 }
 
-const handleSaveShop = async (formData) => {
+const confirmDelete = async () => {
+    deleteLoading.value = true
+    try {
+        await ShopService.deleteShop(deletingShop.value.id)
+        console.log('Shop deleted successfully')
+        showDeleteModal.value = false
+        
+        // Refresh data after delete
+        await handleSearch()
+    } catch (error) {
+        console.error('Delete error:', error)
+        
+        // Handle API not available errors gracefully
+        if (error.message && (error.message.includes('Không tìm thấy shop') || error.message.includes('404'))) {
+            alert('Chức năng quản lý shop chưa được triển khai trên server')
+        } else {
+            alert(error.message || 'Có lỗi xảy ra khi xóa cửa hàng')
+        }
+    } finally {
+        deleteLoading.value = false
+    }
+}
+
+const cancelDelete = () => {
+    deletingShop.value = {}
+}
+
+const handleSaveShop = (formData) => {
+    pendingSaveData.value = formData
+    showSaveModal.value = true
+}
+
+const confirmSave = async () => {
     editLoading.value = true
     editErrors.value = {}
 
     try {
-        console.log('Saving shop:', formData)
-
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000))
-
+        const formData = pendingSaveData.value
         if (formData.id) {
             // Update existing shop
-            const index = shops.value.findIndex(s => s.id === formData.id)
-            if (index !== -1) {
-                shops.value[index] = { ...formData }
-            }
+            await ShopService.updateShop(formData.id, formData)
+            console.log('Shop updated successfully')
         } else {
             // Add new shop
-            const newShop = {
-                ...formData,
-                id: Math.max(...shops.value.map(s => s.id)) + 1,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            }
-            shops.value.unshift(newShop)
-            totalRecords.value += 1
+            await ShopService.createShop(formData)
+            console.log('Shop created successfully')
         }
 
+        // Close modals
+        showSaveModal.value = false
         showEditModal.value = false
-        console.log('Shop saved successfully')
+        
+        // Refresh data after save
+        await handleSearch()
 
     } catch (error) {
         console.error('Save error:', error)
-        editErrors.value = {
-            // Example: code: 'Mã cửa hàng đã tồn tại'
+        
+        // Handle API not available errors gracefully
+        if (error.message && (error.message.includes('Không tìm thấy shop') || error.message.includes('404'))) {
+            alert('Chức năng quản lý shop chưa được triển khai trên server')
+            showSaveModal.value = false
+            showEditModal.value = false
+        } else {
+            showSaveModal.value = false
+            // Handle validation errors
+            if (error.message) {
+                if (error.message.includes('Mã shop đã tồn tại') || error.message.includes('Mã cửa hàng đã tồn tại')) {
+                    editErrors.value = { code: error.message }
+                } else if (error.message.includes('email')) {
+                    editErrors.value = { email: error.message }
+                } else {
+                    alert(error.message)
+                }
+            } else {
+                alert('Có lỗi xảy ra khi lưu cửa hàng')
+            }
         }
     } finally {
         editLoading.value = false
     }
+}
+
+const cancelSave = () => {
+    pendingSaveData.value = {}
 }
 
 const handleCancelEdit = () => {
@@ -463,73 +385,129 @@ const handleCancelEdit = () => {
 }
 
 const searchShops = async () => {
-    // Filter data based on search criteria
-    let filteredData = mockData.filter(shop => {
-        // Filter by code
-        if (searchForm.code && !shop.code.toLowerCase().includes(searchForm.code.toLowerCase())) {
-            return false
+    if (!isMounted.value) return // Don't search if component is not mounted
+    
+    try {
+        // Prepare search parameters
+        const searchParams = {
+            page: currentPage.value,
+            limit: perPage.value
         }
 
-        // Filter by name
-        if (searchForm.name && !shop.name.toLowerCase().includes(searchForm.name.toLowerCase())) {
-            return false
+        // Add search filters
+        if (searchForm.code) searchParams.code = searchForm.code
+        if (searchForm.name) searchParams.name = searchForm.name
+        if (searchForm.companyName) searchParams.companyName = searchForm.companyName
+        if (searchForm.address) searchParams.address = searchForm.address
+        if (searchForm.phone) searchParams.phone = searchForm.phone
+        if (searchForm.email) searchParams.email = searchForm.email
+        if (searchForm.status && searchForm.status.length > 0) {
+            searchParams.status = searchForm.status.join(',')
         }
+        if (searchForm.createdAtFrom) searchParams.createdAtFrom = searchForm.createdAtFrom
+        if (searchForm.createdAtTo) searchParams.createdAtTo = searchForm.createdAtTo
 
-        // Filter by company name
-        if (searchForm.companyName && !shop.companyName.toLowerCase().includes(searchForm.companyName.toLowerCase())) {
-            return false
+        // Call API
+        const response = await ShopService.searchShops(searchParams)
+        
+        if (!isMounted.value) return // Check again after async operation
+        
+        if (response.success) {
+            shops.value = response.data.rows || []
+            totalRecords.value = response.data.count || 0
+        } else {
+            console.error('Search failed:', response.message)
+            shops.value = []
+            totalRecords.value = 0
         }
-
-        // Filter by address
-        if (searchForm.address && !shop.address.toLowerCase().includes(searchForm.address.toLowerCase())) {
-            return false
-        }
-
-        // Filter by phone
-        if (searchForm.phone && !shop.phone.includes(searchForm.phone)) {
-            return false
-        }
-
-        // Filter by email
-        if (searchForm.email && !shop.email.toLowerCase().includes(searchForm.email.toLowerCase())) {
-            return false
-        }
-
-        // Filter by status (array of selected statuses)
-        if (searchForm.status.length > 0 && !searchForm.status.includes(shop.status)) {
-            return false
-        }
-
-        // Filter by date range
-        if (searchForm.createdAtFrom) {
-            const shopDate = new Date(shop.createdAt).toISOString().split('T')[0]
-            if (shopDate < searchForm.createdAtFrom) {
-                return false
+        
+    } catch (error) {
+        console.error('Search error:', error)
+        if (isMounted.value) {
+            shops.value = []
+            totalRecords.value = 0
+            
+            // Handle specific API not found errors more gracefully
+            if (error.message && error.message.includes('Không tìm thấy shop')) {
+                console.warn('Shop API not implemented yet, using empty data')
+                // Don't show alert for this case as it's expected during development
+            } else if (error.message && !error.message.includes('kết nối')) {
+                console.warn('API error:', error.message)
+                // Only show user-facing errors, not development errors
             }
         }
+    }
+}
 
-        if (searchForm.createdAtTo) {
-            const shopDate = new Date(shop.createdAt).toISOString().split('T')[0]
-            if (shopDate > searchForm.createdAtTo) {
-                return false
+// Load companies for dropdown
+const loadCompanies = async () => {
+    try {
+        const response = await CompanyService.getCompaniesForDropdown()
+        if (response.success) {
+            companies.value = response.data || []
+            // Update editFields company options
+            const companyField = editFields.value.find(f => f.key === 'companyId')
+            if (companyField) {
+                companyField.options = [
+                    { value: '', text: 'Chọn công ty' },
+                    ...companies.value.map(company => ({
+                        value: company.id,
+                        text: company.name
+                    }))
+                ]
             }
         }
+    } catch (error) {
+        console.error('Load companies error:', error)
+        companies.value = []
+        
+        // Handle API not available gracefully
+        if (error.message && (error.message.includes('Không tìm thấy') || error.message.includes('404'))) {
+            console.warn('Company API not fully implemented, using empty dropdown')
+        }
+    }
+}
 
-        return true
-    })
-
-    // Apply pagination
-    const startIndex = (currentPage.value - 1) * perPage.value
-    const endIndex = startIndex + perPage.value
-    const paginatedData = filteredData.slice(startIndex, endIndex)
-
-    shops.value = paginatedData
-    totalRecords.value = filteredData.length
+// Load managers for dropdown - mock data for now
+const loadManagers = async () => {
+    // TODO: Replace with actual UserService call when available
+    managers.value = [
+        { id: 1, name: 'Nguyễn Văn A' },
+        { id: 2, name: 'Trần Thị B' },
+        { id: 3, name: 'Lê Văn C' },
+        { id: 4, name: 'Phạm Thị D' },
+        { id: 5, name: 'Hoàng Văn E' }
+    ]
+    
+    // Update editFields manager options
+    const managerField = editFields.value.find(f => f.key === 'managerId')
+    if (managerField) {
+        managerField.options = [
+            { value: '', text: 'Chọn quản lý' },
+            ...managers.value.map(manager => ({
+                value: manager.id,
+                text: manager.name
+            }))
+        ]
+    }
 }
 
 // Lifecycle
-onMounted(() => {
-    handleSearch()
+onMounted(async () => {
+    isMounted.value = true
+    try {
+        await Promise.all([
+            loadCompanies(),
+            loadManagers(),
+            handleSearch()
+        ])
+    } catch (error) {
+        console.error('Component initialization error:', error)
+    }
+})
+
+onUnmounted(() => {
+    isMounted.value = false
 })
 </script>
 

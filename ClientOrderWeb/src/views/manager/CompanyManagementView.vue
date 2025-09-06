@@ -17,6 +17,8 @@
                 placeholder="Nhập số điện thoại" />
             <SearchFormField label="Email" field-name="email" v-model="searchForm.email" type="email"
                 placeholder="Nhập email" />
+            <SearchFormField label="Trạng thái" field-name="status" v-model="searchForm.status" type="select"
+                :options="statusOptions" />
             <SearchFormField label="Từ ngày" field-name="createdAtFrom" v-model="searchForm.createdAtFrom"
                 type="date" />
             <SearchFormField label="Đến ngày" field-name="createdAtTo" v-model="searchForm.createdAtTo" type="date" />
@@ -26,12 +28,18 @@
         <SearchResultTable :items="companies" :fields="tableFields" :loading="loading" :total-records="totalRecords"
             v-model:current-page="currentPage" @page-change="handlePageChange" title="Kết quả tìm kiếm"
             record-unit="công ty">
+            <template #cell(stt)="{ index }">
+                {{ (currentPage - 1) * perPage + index + 1 }}
+            </template>
+
             <template #cell(created_at)="{ item }">
                 <span class="text-nowrap">{{ formatDateTime(item.created_at) }}</span>
             </template>
 
-            <template #cell(updated_at)="{ item }">
-                <span class="text-nowrap">{{ formatDateTime(item.updated_at) }}</span>
+            <template #cell(status)="{ item }">
+                <span :class="getStatusBadgeClass(item.status)">
+                    {{ getStatusText(item.status) }}
+                </span>
             </template>
 
             <template #cell(actions)="{ item }">
@@ -49,6 +57,34 @@
         <!-- Edit Modal -->
         <EditModal v-model="showEditModal" :title="editModalTitle" :data="editingCompany" :fields="editFields"
             :loading="editLoading" :errors="editErrors" @submit="handleSaveCompany" @cancel="handleCancelEdit" />
+
+        <!-- Confirm Delete Modal -->
+        <ConfirmModal 
+            v-model="showDeleteModal" 
+            type="danger"
+            title="Xác nhận xóa"
+            :message="`Bạn có chắc chắn muốn xóa công ty '${deletingCompany?.name??''}'?`"
+            description="Thao tác này không thể hoàn tác."
+            confirm-text="Xác nhận"
+            cancel-text="Hủy"
+            :loading="deleteLoading"
+            @confirm="confirmDelete"
+            @cancel="cancelDelete"
+        />
+
+        <!-- Confirm Save Modal -->
+        <ConfirmModal 
+            v-model="showSaveModal" 
+            type="info"
+            title="Xác nhận lưu"
+            :message="editingCompany?.id ? 'Bạn có chắc chắn muốn cập nhật thông tin công ty?' : 'Bạn có chắc chắn muốn tạo công ty mới?'"
+            description="Vui lòng kiểm tra lại thông tin trước khi lưu."
+            confirm-text="Xác nhận"
+            cancel-text="Hủy"
+            :loading="editLoading"
+            @confirm="confirmSave"
+            @cancel="cancelSave"
+        />
     </ManagerLayout>
 </template>
 
@@ -59,8 +95,10 @@ import SearchForm from '../../components/SearchForm.vue'
 import SearchFormField from '../../components/SearchFormField.vue'
 import SearchResultTable from '../../components/SearchResultTable.vue'
 import EditModal from '../../components/EditModal.vue'
+import ConfirmModal from '../../components/ConfirmModal.vue'
 import { formatDateTime } from '../../utils/dateTime.js'
 import CompanyService from '../../services/manager/CompanyService.js'
+import { SEARCH_STATUS_OPTIONS, getStatusText, getStatusBadgeClass } from '../../constants/app.constants.js'
 
 // Reactive data
 const loading = ref(false)
@@ -75,6 +113,13 @@ const editLoading = ref(false)
 const editingCompany = ref({})
 const editErrors = ref({})
 
+// Confirm modal data
+const showDeleteModal = ref(false)
+const showSaveModal = ref(false)
+const deleteLoading = ref(false)
+const deletingCompany = ref({})
+const pendingSaveData = ref({})
+
 const searchForm = reactive({
     code: '',
     name: '',
@@ -82,23 +127,28 @@ const searchForm = reactive({
     address: '',
     phone: '',
     email: '',
+    status: '',
     createdAtFrom: '',
     createdAtTo: ''
 })
 
 // Table configuration
 const tableFields = [
-    { key: 'id', label: 'ID', sortable: true, thStyle: { width: '60px' } },
+    { key: 'stt', label: 'STT', thStyle: { width: '60px', textAlign: 'center' }, tdClass: 'text-center' },
+    { key: 'id', label: 'ID', sortable: true, thStyle: { width: '60px' }, class: 'd-none', thClass: 'd-none', tdClass: 'd-none' },
     { key: 'code', label: 'Mã công ty', sortable: true, thStyle: { width: '120px' } },
     { key: 'name', label: 'Tên công ty', sortable: true },
     { key: 'registration_number', label: 'Số đăng ký', sortable: true, thStyle: { width: '150px' } },
     { key: 'address', label: 'Địa chỉ', thStyle: { width: '200px' } },
     { key: 'phone', label: 'Điện thoại', thStyle: { width: '120px' } },
     { key: 'email', label: 'Email', thStyle: { width: '180px' } },
+    { key: 'status', label: 'Trạng thái', sortable: true, thStyle: { width: '120px' } },
     { key: 'created_at', label: 'Ngày tạo', sortable: true, thStyle: { width: '160px', whiteSpace: 'nowrap' } },
-    { key: 'updated_at', label: 'Cập nhật', sortable: true, thStyle: { width: '160px', whiteSpace: 'nowrap' } },
     { key: 'actions', label: 'Thao tác', thStyle: { width: '120px' } }
 ]
+
+// Status options for search dropdown
+const statusOptions = SEARCH_STATUS_OPTIONS
 
 // Edit modal configuration
 const editFields = [
@@ -153,6 +203,16 @@ const editFields = [
         label: 'Website',
         type: 'text',
         placeholder: 'Nhập website',
+        colClass: 'col-md-6'
+    },
+    {
+        key: 'status',
+        label: 'Trạng thái',
+        type: 'select',
+        options: [
+            { value: 'active', text: 'Hoạt động' },
+            { value: 'inactive', text: 'Không hoạt động' }
+        ],
         colClass: 'col-md-6'
     },
     {
@@ -211,30 +271,44 @@ const handleAddNew = () => {
     showEditModal.value = true
 }
 
-const handleDelete = async (company) => {
-    if (confirm(`Bạn có chắc chắn muốn xóa công ty "${company.name}"?`)) {
-        try {
-            loading.value = true
-            await CompanyService.deleteCompany(company.id)
+const handleDelete = (company) => {
+    deletingCompany.value = company
+    showDeleteModal.value = true
+}
 
-            // Refresh data after successful delete
-            await searchCompanies()
-            alert('Xóa công ty thành công!')
-        } catch (error) {
-            console.error('Delete error:', error)
-            alert('Lỗi khi xóa công ty: ' + error.message)
-        } finally {
-            loading.value = false
-        }
+const confirmDelete = async () => {
+    deleteLoading.value = true
+    try {
+        await CompanyService.deleteCompany(deletingCompany.value.id)
+        showDeleteModal.value = false
+        
+        // Refresh data after successful delete
+        await searchCompanies()
+        alert('Xóa công ty thành công!')
+    } catch (error) {
+        console.error('Delete error:', error)
+        alert('Lỗi khi xóa công ty: ' + error.message)
+    } finally {
+        deleteLoading.value = false
     }
 }
 
-const handleSaveCompany = async (formData) => {
+const cancelDelete = () => {
+    deletingCompany.value = {}
+}
+
+const handleSaveCompany = (formData) => {
+    pendingSaveData.value = formData
+    showSaveModal.value = true
+}
+
+const confirmSave = async () => {
     editLoading.value = true
     editErrors.value = {}
 
     try {
         let result
+        const formData = pendingSaveData.value
         if (formData.id) {
             // Update existing company
             result = await CompanyService.updateCompany(formData.id, formData)
@@ -243,7 +317,8 @@ const handleSaveCompany = async (formData) => {
             result = await CompanyService.createCompany(formData)
         }
 
-        // Close modal
+        // Close modals
+        showSaveModal.value = false
         showEditModal.value = false
 
         // Refresh data
@@ -255,6 +330,7 @@ const handleSaveCompany = async (formData) => {
 
     } catch (error) {
         console.error('Save error:', error)
+        showSaveModal.value = false
 
         // Handle validation errors from server
         if (error.message.includes('đã tồn tại')) {
@@ -276,6 +352,10 @@ const handleSaveCompany = async (formData) => {
     } finally {
         editLoading.value = false
     }
+}
+
+const cancelSave = () => {
+    pendingSaveData.value = {}
 }
 
 const handleCancelEdit = () => {
@@ -310,6 +390,8 @@ const searchCompanies = async () => {
     }
 }
 
+// Note: getStatusText and getStatusBadgeClass are imported from constants
+
 // Lifecycle
 onMounted(() => {
     handleSearch()
@@ -320,6 +402,28 @@ onMounted(() => {
 /* Custom styles for this view if needed */
 .text-nowrap {
     white-space: nowrap !important;
+}
+
+/* Badge styles for status */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+}
+
+.badge-success {
+    background-color: #198754;
+    color: white;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #000;
 }
 
 /* Ensure datetime columns don't wrap */
