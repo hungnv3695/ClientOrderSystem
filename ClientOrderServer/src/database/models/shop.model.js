@@ -9,6 +9,11 @@ module.exports = (sequelize, DataTypes) => {
         code: {
             type: DataTypes.STRING(8),
             allowNull: false,
+            unique: true,
+        },
+        name: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
         },
         companyId: {
             type: DataTypes.INTEGER,
@@ -33,9 +38,9 @@ module.exports = (sequelize, DataTypes) => {
             field: 'manager_id',
         },
         status: {
-            type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+            type: DataTypes.ENUM('active', 'inactive'),
             allowNull: false,
-            defaultValue: 'ACTIVE',
+            defaultValue: 'active',
         },
     }, {
         tableName: 'shop',
@@ -46,7 +51,8 @@ module.exports = (sequelize, DataTypes) => {
         indexes: [
             { fields: ['company_id'] },
             { fields: ['manager_id'] },
-            { fields: ['code'] },
+            { fields: ['code'], unique: true },
+            { fields: ['name'] },
         ],
     });
 

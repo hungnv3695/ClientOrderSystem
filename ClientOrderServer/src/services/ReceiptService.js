@@ -110,7 +110,7 @@ async function createReceiptByOrderId(orderId, options = {}) {
                 paymentMethod,
                 paidAt: new Date(),
                 cashierId,
-                status: 'paid',
+                status: 'Paid',
                 notes,
             }, { transaction: t });
 

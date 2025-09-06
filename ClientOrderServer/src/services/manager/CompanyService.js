@@ -12,6 +12,7 @@ class CompanyService {
      * @param {string} params.address - Địa chỉ
      * @param {string} params.phone - Số điện thoại
      * @param {string} params.email - Email
+     * @param {string} params.status - Trạng thái ('active', 'inactive')
      * @param {string} params.createdAtFrom - Từ ngày tạo (YYYY-MM-DD)
      * @param {string} params.createdAtTo - Đến ngày tạo (YYYY-MM-DD)
      * @param {number} params.page - Trang hiện tại (mặc định: 1)
@@ -29,6 +30,7 @@ class CompanyService {
                 address,
                 phone,
                 email,
+                status,
                 createdAtFrom,
                 createdAtTo,
                 page = 1,
@@ -78,6 +80,11 @@ class CompanyService {
                 };
             }
 
+            // Tìm kiếm theo trạng thái
+            if (status && status.trim() && ['active', 'inactive'].includes(status.trim())) {
+                whereConditions.status = status.trim();
+            }
+
             // Lọc theo khoảng thời gian tạo
             if (createdAtFrom || createdAtTo) {
                 whereConditions.created_at = {};
@@ -117,6 +124,7 @@ class CompanyService {
                     'email',
                     'website',
                     'description',
+                    'status',
                     'created_at',
                     'updated_at'
                 ]
@@ -148,6 +156,7 @@ class CompanyService {
                         address,
                         phone,
                         email,
+                        status,
                         createdAtFrom,
                         createdAtTo
                     },
@@ -171,11 +180,15 @@ class CompanyService {
 
     /**
      * Lấy danh sách tất cả công ty (không phân trang) - dùng cho dropdown
-     * @returns {Array} Danh sách công ty
+     * Chỉ lấy các công ty có trạng thái hoạt động
+     * @returns {Array} Danh sách công ty đang hoạt động
      */
     async getAllCompaniesForDropdown() {
         try {
             const companies = await Company.findAll({
+                where: {
+                    status: 'active'
+                },
                 attributes: ['id', 'code', 'name'],
                 order: [['name', 'ASC']]
             });
@@ -183,7 +196,7 @@ class CompanyService {
             return {
                 success: true,
                 data: companies,
-                message: `Lấy ${companies.length} công ty thành công`
+                message: `Lấy ${companies.length} công ty đang hoạt động thành công`
             };
 
         } catch (error) {
@@ -239,11 +252,12 @@ class CompanyService {
      * @param {string} companyData.email - Email (tùy chọn)
      * @param {string} companyData.website - Website (tùy chọn)
      * @param {string} companyData.description - Mô tả (tùy chọn)
+     * @param {string} companyData.status - Trạng thái: 'active' hoặc 'inactive' (mặc định: 'active')
      * @returns {Object} Thông tin công ty vừa tạo
      */
     async createCompany(companyData) {
         try {
-            const { code, name, registration_number, address, phone, email, website, description } = companyData;
+            const { code, name, registration_number, address, phone, email, website, description, status } = companyData;
 
             // Validation dữ liệu đầu vào
             if (!code || !code.trim()) {
@@ -289,6 +303,14 @@ class CompanyService {
             //     }
             // }
 
+            // Validate status nếu có
+            if (status && !['active', 'inactive'].includes(status)) {
+                return {
+                    success: false,
+                    message: 'Trạng thái phải là "active" hoặc "inactive"'
+                };
+            }
+
             // Kiểm tra tính duy nhất của code
             const existingCompanyByCode = await Company.findOne({
                 where: { code: code.trim() }
@@ -322,7 +344,8 @@ class CompanyService {
                 phone: phone?.trim() || null,
                 email: email?.trim() || null,
                 website: website?.trim() || null,
-                description: description?.trim() || null
+                description: description?.trim() || null,
+                status: status || 'active'
             });
 
             const newCompany = await Company.create({
@@ -333,7 +356,8 @@ class CompanyService {
                 phone: phone?.trim() || null,
                 email: email?.trim() || null,
                 website: website?.trim() || null,
-                description: description?.trim() || null
+                description: description?.trim() || null,
+                status: status || 'active'
             });
 
             console.log('CompanyService.createCompany - Created company:', JSON.stringify(newCompany.toJSON(), null, 2));
@@ -366,6 +390,221 @@ class CompanyService {
             throw {
                 success: false,
                 message: 'Lỗi khi tạo công ty',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cập nhật thông tin công ty
+     * @param {number} id - ID công ty
+     * @param {Object} companyData - Dữ liệu cập nhật
+     * @param {string} companyData.code - Mã công ty (bắt buộc, unique)
+     * @param {string} companyData.name - Tên công ty (bắt buộc)
+     * @param {string} companyData.registration_number - Số đăng ký kinh doanh (unique)
+     * @param {string} companyData.address - Địa chỉ (tùy chọn)
+     * @param {string} companyData.phone - Số điện thoại (tùy chọn)
+     * @param {string} companyData.email - Email (tùy chọn)
+     * @param {string} companyData.website - Website (tùy chọn)
+     * @param {string} companyData.description - Mô tả (tùy chọn)
+     * @param {string} companyData.status - Trạng thái: 'active' hoặc 'inactive' (tùy chọn)
+     * @returns {Object} Thông tin công ty đã cập nhật
+     */
+    async updateCompany(id, companyData) {
+        try {
+            const { code, name, registration_number, address, phone, email, website, description, status } = companyData;
+
+            // Validation ID
+            if (!id || id < 1) {
+                return {
+                    success: false,
+                    message: 'ID công ty không hợp lệ'
+                };
+            }
+
+            // Kiểm tra công ty có tồn tại không
+            const existingCompany = await Company.findByPk(id);
+            if (!existingCompany) {
+                return {
+                    success: false,
+                    message: 'Không tìm thấy công ty'
+                };
+            }
+
+            // Validation dữ liệu đầu vào
+            if (!code || !code.trim()) {
+                return {
+                    success: false,
+                    message: 'Mã công ty là bắt buộc'
+                };
+            }
+
+            if (!name || !name.trim()) {
+                return {
+                    success: false,
+                    message: 'Tên công ty là bắt buộc'
+                };
+            }
+
+            if (registration_number && !registration_number.trim()) {
+                return {
+                    success: false,
+                    message: 'Số đăng ký kinh doanh không được để trống'
+                };
+            }
+
+            // Kiểm tra email format nếu có
+            if (email && email.trim()) {
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email.trim())) {
+                    return {
+                        success: false,
+                        message: 'Email không đúng định dạng'
+                    };
+                }
+            }
+
+            // Validate status nếu có
+            if (status && !['active', 'inactive'].includes(status)) {
+                return {
+                    success: false,
+                    message: 'Trạng thái phải là "active" hoặc "inactive"'
+                };
+            }
+
+            // Kiểm tra tính duy nhất của code (nếu khác với code hiện tại)
+            if (code.trim() !== existingCompany.code) {
+                const existingCompanyByCode = await Company.findOne({
+                    where: { 
+                        code: code.trim(),
+                        id: { [Op.ne]: id } // Loại trừ chính nó
+                    }
+                });
+
+                if (existingCompanyByCode) {
+                    return {
+                        success: false,
+                        message: `Mã công ty "${code.trim()}" đã tồn tại`
+                    };
+                }
+            }
+
+            // Kiểm tra tính duy nhất của registration_number (nếu khác với registration_number hiện tại)
+            if (registration_number && registration_number.trim() !== existingCompany.registration_number) {
+                const existingCompanyByRegNumber = await Company.findOne({
+                    where: { 
+                        registration_number: registration_number.trim(),
+                        id: { [Op.ne]: id } // Loại trừ chính nó
+                    }
+                });
+
+                if (existingCompanyByRegNumber) {
+                    return {
+                        success: false,
+                        message: `Số đăng ký kinh doanh "${registration_number.trim()}" đã tồn tại`
+                    };
+                }
+            }
+
+            // Chuẩn bị dữ liệu cập nhật
+            const updateData = {
+                code: code.trim(),
+                name: name.trim(),
+                registration_number: registration_number?.trim() || null,
+                address: address?.trim() || null,
+                phone: phone?.trim() || null,
+                email: email?.trim() || null,
+                website: website?.trim() || null,
+                description: description?.trim() || null
+            };
+
+            // Thêm status nếu có
+            if (status) {
+                updateData.status = status;
+            }
+
+            console.log('CompanyService.updateCompany - Updating with data:', updateData);
+
+            // Cập nhật công ty
+            await existingCompany.update(updateData);
+
+            // Lấy lại thông tin công ty đã cập nhật
+            const updatedCompany = await Company.findByPk(id);
+
+            console.log('CompanyService.updateCompany - Updated company:', JSON.stringify(updatedCompany.toJSON(), null, 2));
+
+            return {
+                success: true,
+                data: updatedCompany,
+                message: 'Cập nhật công ty thành công'
+            };
+
+        } catch (error) {
+            console.error('CompanyService.updateCompany error:', error);
+
+            // Xử lý lỗi unique constraint từ database
+            if (error.name === 'SequelizeUniqueConstraintError') {
+                const field = error.errors[0]?.path;
+                if (field === 'code') {
+                    return {
+                        success: false,
+                        message: 'Mã công ty đã tồn tại'
+                    };
+                } else if (field === 'registration_number') {
+                    return {
+                        success: false,
+                        message: 'Số đăng ký kinh doanh đã tồn tại'
+                    };
+                }
+            }
+
+            throw {
+                success: false,
+                message: 'Lỗi khi cập nhật công ty',
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cập nhật trạng thái công ty
+     * @param {number} id - ID công ty
+     * @param {string} status - Trạng thái mới: 'active' hoặc 'inactive'
+     * @returns {Object} Kết quả cập nhật
+     */
+    async updateCompanyStatus(id, status) {
+        try {
+            // Validate status
+            if (!['active', 'inactive'].includes(status)) {
+                return {
+                    success: false,
+                    message: 'Trạng thái phải là "active" hoặc "inactive"'
+                };
+            }
+
+            // Kiểm tra công ty có tồn tại không
+            const company = await Company.findByPk(id);
+            if (!company) {
+                return {
+                    success: false,
+                    message: 'Không tìm thấy công ty'
+                };
+            }
+
+            // Cập nhật trạng thái
+            await company.update({ status });
+
+            return {
+                success: true,
+                data: company,
+                message: `Cập nhật trạng thái công ty thành "${status}" thành công`
+            };
+
+        } catch (error) {
+            console.error('CompanyService.updateCompanyStatus error:', error);
+            throw {
+                success: false,
+                message: 'Lỗi khi cập nhật trạng thái công ty',
                 error: error.message
             };
         }

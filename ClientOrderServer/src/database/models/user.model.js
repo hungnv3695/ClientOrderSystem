@@ -11,9 +11,9 @@ module.exports = (sequelize, DataTypes) => {
             validate: { isIn: [['staff', 'manager', 'device']] },
         },
         status: {
-            type: DataTypes.ENUM('ACTIVE', 'INACTIVE'),
+            type: DataTypes.ENUM('active', 'inactive'),
             allowNull: false,
-            defaultValue: 'ACTIVE',
+            defaultValue: 'active',
         },
         email: { type: DataTypes.STRING(255), allowNull: true },
         phone: { type: DataTypes.STRING(20), allowNull: true },

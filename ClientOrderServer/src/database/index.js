@@ -111,7 +111,7 @@ async function seedInitialData() {
                     role: 'manager',
                     code: 'MGR001',
                     email: 'manager@company.com',
-                    status: 'ACTIVE'
+                    status: 'active'
                 },
             });
 
@@ -123,7 +123,7 @@ async function seedInitialData() {
                     role: 'staff',
                     code: 'STF001',
                     email: 'staff@company.com',
-                    status: 'ACTIVE'
+                    status: 'active'
                 },
             });
 
@@ -135,7 +135,7 @@ async function seedInitialData() {
                     role: 'device',
                     code: 'DEV001',
                     email: 'device@company.com',
-                    status: 'ACTIVE'
+                    status: 'active'
                 },
             });
 

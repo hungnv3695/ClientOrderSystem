@@ -1,23 +1,25 @@
-// controllers/manager/CompanyController.js
-const CompanyService = require('../../services/manager/CompanyService');
+// controllers/manager/ShopController.js
+const ShopService = require('../../services/manager/ShopService');
 
-class CompanyController {
+class ShopController {
     /**
-     * API tìm kiếm công ty với phân trang
-     * GET /api/manager/companies/search
+     * API tìm kiếm shop với phân trang
+     * GET /api/shop/search
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async searchCompanies(req, res) {
+    async searchShops(req, res) {
         try {
             // Lấy parameters từ query string
             const {
                 code,
                 name,
-                registration_number,
+                companyId,
+                companyName,
                 address,
                 phone,
                 email,
+                managerId,
                 status,
                 createdAtFrom,
                 createdAtTo,
@@ -31,10 +33,12 @@ class CompanyController {
             const searchParams = {
                 code: code?.trim() || '',
                 name: name?.trim() || '',
-                registration_number: registration_number?.trim() || '',
+                companyId: companyId ? parseInt(companyId) : null,
+                companyName: companyName?.trim() || '',
                 address: address?.trim() || '',
                 phone: phone?.trim() || '',
                 email: email?.trim() || '',
+                managerId: managerId ? parseInt(managerId) : null,
                 status: status?.trim() || '',
                 createdAtFrom: createdAtFrom || '',
                 createdAtTo: createdAtTo || '',
@@ -89,64 +93,97 @@ class CompanyController {
             }
 
             // Gọi service để tìm kiếm
-            const result = await CompanyService.searchCompanies(searchParams);
+            const result = await ShopService.searchShops(searchParams);
 
             // Trả về kết quả
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.searchCompanies error:', error);
+            console.error('ShopController.searchShops error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi tìm kiếm công ty',
+                message: error.message || 'Lỗi server khi tìm kiếm shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API lấy danh sách công ty cho dropdown
-     * GET /api/manager/companies/dropdown
+     * API lấy danh sách shop cho dropdown
+     * GET /api/shop/dropdown
      * @param {Object} req - Request object  
      * @param {Object} res - Response object
      */
-    async getCompaniesForDropdown(req, res) {
+    async getShopsForDropdown(req, res) {
         try {
-            const result = await CompanyService.getAllCompaniesForDropdown();
+            const result = await ShopService.getAllShopsForDropdown();
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.getCompaniesForDropdown error:', error);
+            console.error('ShopController.getShopsForDropdown error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi lấy danh sách công ty',
+                message: error.message || 'Lỗi server khi lấy danh sách shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API lấy thông tin chi tiết công ty theo ID
-     * GET /api/manager/companies/:id
+     * API lấy danh sách shop theo công ty
+     * GET /api/shop/company/:companyId
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async getCompanyById(req, res) {
+    async getShopsByCompany(req, res) {
         try {
-            const { id } = req.params;
+            const { companyId } = req.params;
 
-            // Validate ID
-            const companyId = parseInt(id);
-            if (!companyId || companyId < 1) {
+            // Validate companyId
+            const id = parseInt(companyId);
+            if (!id || id < 1) {
                 return res.status(400).json({
                     success: false,
                     message: 'ID công ty không hợp lệ'
                 });
             }
 
-            const result = await CompanyService.getCompanyById(companyId);
+            const result = await ShopService.getShopsByCompany(id);
+            return res.status(200).json(result);
+
+        } catch (error) {
+            console.error('ShopController.getShopsByCompany error:', error);
+
+            return res.status(500).json({
+                success: false,
+                message: error.message || 'Lỗi server khi lấy danh sách shop theo công ty',
+                error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        }
+    }
+
+    /**
+     * API lấy thông tin chi tiết shop theo ID
+     * GET /api/shop/:id
+     * @param {Object} req - Request object
+     * @param {Object} res - Response object
+     */
+    async getShopById(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Validate ID
+            const shopId = parseInt(id);
+            if (!shopId || shopId < 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID shop không hợp lệ'
+                });
+            }
+
+            const result = await ShopService.getShopById(shopId);
 
             if (!result.success) {
                 return res.status(404).json(result);
@@ -155,27 +192,27 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.getCompanyById error:', error);
+            console.error('ShopController.getShopById error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi lấy thông tin công ty',
+                message: error.message || 'Lỗi server khi lấy thông tin shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API tạo công ty mới
-     * POST /api/manager/companies
+     * API tạo shop mới
+     * POST /api/shop
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async createCompany(req, res) {
+    async createShop(req, res) {
         try {
-            console.log('createCompany - Request body:', JSON.stringify(req.body, null, 2));
+            console.log('createShop - Request body:', JSON.stringify(req.body, null, 2));
 
-            const { code, name, registration_number, address, phone, email, website, description } = req.body;
+            const { code, name, companyId, address, phone, email, managerId, description } = req.body;
 
             // Validate input
             if (!req.body || typeof req.body !== 'object') {
@@ -185,23 +222,23 @@ class CompanyController {
                 });
             }
 
-            console.log('createCompany - Extracted data:', {
-                code, name, registration_number, address, phone, email, website, description
+            console.log('createShop - Extracted data:', {
+                code, name, companyId, address, phone, email, managerId, description
             });
 
-            // Gọi service để tạo công ty
-            const result = await CompanyService.createCompany({
+            // Gọi service để tạo shop
+            const result = await ShopService.createShop({
                 code,
                 name,
-                registration_number,
+                companyId,
                 address,
                 phone,
                 email,
-                website,
+                managerId,
                 description
             });
 
-            console.log('createCompany - Service result:', JSON.stringify(result, null, 2));
+            console.log('createShop - Service result:', JSON.stringify(result, null, 2));
 
             // Nếu có lỗi validation từ service
             if (!result.success) {
@@ -212,38 +249,38 @@ class CompanyController {
             return res.status(201).json(result);
 
         } catch (error) {
-            console.error('CompanyController.createCompany error:', error);
+            console.error('ShopController.createShop error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi tạo công ty',
+                message: error.message || 'Lỗi server khi tạo shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API cập nhật thông tin công ty
-     * PUT /api/manager/companies/:id
+     * API cập nhật thông tin shop
+     * PUT /api/shop/:id
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async updateCompany(req, res) {
+    async updateShop(req, res) {
         try {
             const { id } = req.params;
-            const { code, name, registration_number, address, phone, email, website, description, status } = req.body;
+            const { code, name, companyId, address, phone, email, managerId, description, status } = req.body;
 
-            console.log('updateCompany - Request params and body:', {
+            console.log('updateShop - Request params and body:', {
                 id,
                 body: JSON.stringify(req.body, null, 2)
             });
 
             // Validate ID
-            const companyId = parseInt(id);
-            if (!companyId || companyId < 1) {
+            const shopId = parseInt(id);
+            if (!shopId || shopId < 1) {
                 return res.status(400).json({
                     success: false,
-                    message: 'ID công ty không hợp lệ'
+                    message: 'ID shop không hợp lệ'
                 });
             }
 
@@ -255,20 +292,20 @@ class CompanyController {
                 });
             }
 
-            // Gọi service để cập nhật công ty
-            const result = await CompanyService.updateCompany(companyId, {
+            // Gọi service để cập nhật shop
+            const result = await ShopService.updateShop(shopId, {
                 code,
                 name,
-                registration_number,
+                companyId,
                 address,
                 phone,
                 email,
-                website,
+                managerId,
                 description,
                 status
             });
 
-            console.log('updateCompany - Service result:', JSON.stringify(result, null, 2));
+            console.log('updateShop - Service result:', JSON.stringify(result, null, 2));
 
             // Nếu có lỗi validation từ service
             if (!result.success) {
@@ -279,38 +316,38 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.updateCompany error:', error);
+            console.error('ShopController.updateShop error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi cập nhật công ty',
+                message: error.message || 'Lỗi server khi cập nhật shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API cập nhật trạng thái công ty
-     * PATCH /api/manager/companies/:id/status
+     * API cập nhật trạng thái shop
+     * PATCH /api/shop/:id/status
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async updateCompanyStatus(req, res) {
+    async updateShopStatus(req, res) {
         try {
             const { id } = req.params;
             const { status } = req.body;
 
-            console.log('updateCompanyStatus - Request params and body:', {
+            console.log('updateShopStatus - Request params and body:', {
                 id,
                 status
             });
 
             // Validate ID
-            const companyId = parseInt(id);
-            if (!companyId || companyId < 1) {
+            const shopId = parseInt(id);
+            if (!shopId || shopId < 1) {
                 return res.status(400).json({
                     success: false,
-                    message: 'ID công ty không hợp lệ'
+                    message: 'ID shop không hợp lệ'
                 });
             }
 
@@ -323,9 +360,9 @@ class CompanyController {
             }
 
             // Gọi service để cập nhật trạng thái
-            const result = await CompanyService.updateCompanyStatus(companyId, status);
+            const result = await ShopService.updateShopStatus(shopId, status);
 
-            console.log('updateCompanyStatus - Service result:', JSON.stringify(result, null, 2));
+            console.log('updateShopStatus - Service result:', JSON.stringify(result, null, 2));
 
             // Nếu có lỗi từ service
             if (!result.success) {
@@ -336,40 +373,58 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.updateCompanyStatus error:', error);
+            console.error('ShopController.updateShopStatus error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi cập nhật trạng thái công ty',
+                message: error.message || 'Lỗi server khi cập nhật trạng thái shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 
     /**
-     * API xóa công ty
-     * DELETE /api/manager/companies/:id
+     * API xóa shop
+     * DELETE /api/shop/:id
      * @param {Object} req - Request object
      * @param {Object} res - Response object
      */
-    async deleteCompany(req, res) {
+    async deleteShop(req, res) {
         try {
-            // TODO: Implement delete company logic
-            return res.status(501).json({
-                success: false,
-                message: 'Chức năng xóa công ty chưa được triển khai'
-            });
+            const { id } = req.params;
+
+            // Validate ID
+            const shopId = parseInt(id);
+            if (!shopId || shopId < 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'ID shop không hợp lệ'
+                });
+            }
+
+            // Gọi service để xóa shop
+            const result = await ShopService.deleteShop(shopId);
+
+            console.log('deleteShop - Service result:', JSON.stringify(result, null, 2));
+
+            // Nếu có lỗi từ service
+            if (!result.success) {
+                return res.status(404).json(result);
+            }
+
+            // Trả về kết quả thành công
+            return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.deleteCompany error:', error);
+            console.error('ShopController.deleteShop error:', error);
 
             return res.status(500).json({
                 success: false,
-                message: error.message || 'Lỗi server khi xóa công ty',
+                message: error.message || 'Lỗi server khi xóa shop',
                 error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         }
     }
 }
 
-module.exports = new CompanyController();
+module.exports = new ShopController();

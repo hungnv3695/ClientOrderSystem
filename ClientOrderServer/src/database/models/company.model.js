@@ -40,6 +40,11 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            status: {
+                type: DataTypes.ENUM('active', 'inactive'),
+                allowNull: false,
+                defaultValue: 'active'
+            },
         },
         {
             tableName: 'company',
@@ -50,6 +55,7 @@ module.exports = (sequelize, DataTypes) => {
             indexes: [
                 { fields: ['code'] },
                 { fields: ['registration_number'] },
+                { fields: ['status'] },
             ],
         }
     );

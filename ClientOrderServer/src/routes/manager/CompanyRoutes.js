@@ -30,6 +30,9 @@ router.post('/', CompanyController.createCompany);
 // PUT /api/manager/companies/:id - Cập nhật thông tin công ty
 router.put('/:id', CompanyController.updateCompany);
 
+// PATCH /api/manager/companies/:id/status - Cập nhật trạng thái công ty
+router.patch('/:id/status', CompanyController.updateCompanyStatus);
+
 // DELETE /api/manager/companies/:id - Xóa công ty
 router.delete('/:id', CompanyController.deleteCompany);
 
