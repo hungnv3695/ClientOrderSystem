@@ -43,7 +43,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { io } from 'socket.io-client'
-import axios from '../services/axios'
+import { ordersApi } from '../constants/apiHelpers.js'
 import { SHOP_CODE, SOCKET_URL } from '../config/appConfig.js'
 import OrderNumberTag from '../components/OrderNumberTag.vue'
 import ProcessingOrderTag from '../components/ProcessingOrderTag.vue'
@@ -94,8 +94,8 @@ const deliveredOrders = computed(() => orders.value.filter(o => o.status === 'De
 onMounted(async () => {
     // 1) Lấy dữ liệu ban đầu qua REST
     try {
-        const res = await axios.get('orders/numbers')
-        orders.value = res.data?.data || []
+        const res = await ordersApi.getNumbers()
+        orders.value = res.data || []
     } catch (e) {
         console.error('fetch numbers failed', e)
     }
@@ -122,7 +122,7 @@ async function processOrderClick(orderId, status) {
     if (!order) return
 
     try {
-        await axios.patch(`orders/${orderId}/status`, { status: status })
+        await ordersApi.updateStatus(orderId, status)
         // Optimistic update (có thể bỏ nếu tin cậy socket emit)
         //order.status = status
     } catch (e) {

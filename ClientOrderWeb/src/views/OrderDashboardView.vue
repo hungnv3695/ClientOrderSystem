@@ -23,7 +23,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from '../services/axios.js'
+import { ordersApi } from '../constants/apiHelpers.js'
 import { io } from 'socket.io-client'
 import { SHOP_CODE, SOCKET_URL } from '../config/appConfig.js'
 
@@ -32,8 +32,8 @@ const orders = ref([])
 onMounted(async () => {
     // 1) Lấy dữ liệu ban đầu qua REST
     try {
-        const res = await axios.get('orders/numbers')
-        orders.value = res.data?.data || []
+        const res = await ordersApi.getNumbers()
+        orders.value = res.data || []
     } catch (e) {
         console.error('fetch numbers failed', e)
     }
