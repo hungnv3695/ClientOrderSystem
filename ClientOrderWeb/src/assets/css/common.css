@@ -7,58 +7,94 @@
     --success-green: #198754;
     --order-pill-green: #77C26B;
     /* bright green for call-to-action button */
+    
+    /* Earth tones for natural balance */
+    --earth-brown: #8B7355;
+    --earth-brown-light: #A6956B;
+    --earth-brown-dark: #6B5D48;
+    --cream-white: #F5F5DC;
+    --warm-beige: #E8DCC6;
+    --natural-shadow: rgba(107, 93, 72, 0.15);
 }
 
 body,
 .nature-bg {
-    background: var(--nature-green-dark);
-    color: #ffffff;
+    background: linear-gradient(135deg, var(--nature-green-dark) 0%, var(--earth-brown) 100%);
+    color: var(--cream-white);
+    min-height: 100vh;
+    font-family: 'Inter', 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
+    letter-spacing: 0.3px;
+    line-height: 1.6;
 }
 
 div#app {
-    font-family: 'Noto Sans', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
-    color: #ffffff;
+    font-family: 'Inter', 'Poppins', 'Segoe UI', 'Roboto', sans-serif;
+    color: var(--cream-white);
+    letter-spacing: 0.3px;
+    line-height: 1.6;
 }
 
 .nature-btn,
 .btn-nature {
-    background: var(--nature-green-dark);
-    color: #ffffff;
+    background: linear-gradient(135deg, var(--nature-green) 0%, var(--nature-green-soft) 100%);
+    color: var(--earth-brown-dark);
     border: none;
-    border-radius: 6px;
-    transition: background 0.2s;
+    border-radius: 12px;
+    transition: all 0.3s ease-out;
+    box-shadow: 0 4px 12px var(--natural-shadow);
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 .nature-btn:hover,
 .btn-nature:hover {
-    background: var(--earth-brown-dark);
+    background: linear-gradient(135deg, var(--nature-green-light) 0%, var(--nature-green) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px var(--natural-shadow);
 }
 
 .order-list-bg {
-    background: var(--nature-green);
-    box-shadow: 0 2px 8px #0001;
+    background: linear-gradient(135deg, var(--nature-green) 0%, var(--nature-green-soft) 100%);
+    box-shadow: 0 8px 24px var(--natural-shadow);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
 }
 
 .menu-list-bg {
-    background: var(--nature-green);
-    box-shadow: 0 2px 8px #0001;
+    background: linear-gradient(135deg, var(--nature-green) 0%, var(--nature-green-soft) 100%);
+    box-shadow: 0 8px 24px var(--natural-shadow);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(245, 245, 220, 0.15);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .nature-card {
-    background: var(--earth-brown-light);
-    box-shadow: 0 2px 8px #0002;
-    color: #fff;
+    background: linear-gradient(135deg, var(--earth-brown-light) 0%, var(--earth-brown) 100%);
+    box-shadow: 0 8px 24px var(--natural-shadow);
+    color: var(--cream-white);
+    border-radius: 16px;
+    border: 1px solid rgba(245, 245, 220, 0.1);
+    transition: all 0.3s ease-out;
+}
+
+.nature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px var(--natural-shadow);
 }
 
 .h1-screen-title {
-    color: black;
-
+    color: var(--earth-brown-dark);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Pill CTA button ("Gọi món") */
 .btn.pill-order-btn {
-    background: var(--order-pill-green) !important;
-    color: #000 !important;
+    background: linear-gradient(135deg, var(--order-pill-green) 0%, #90E085 100%) !important;
+    color: var(--earth-brown-dark) !important;
     border: none !important;
     border-radius: 9999px !important;
     padding: 28px 72px !important;
@@ -66,14 +102,19 @@ div#app {
     font-size: 2.5rem !important;
     /* doubled */
     font-weight: 600 !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    box-shadow: 0 8px 24px rgba(119, 194, 107, 0.3) !important;
     min-width: 20px;
+    letter-spacing: 1px !important;
+    transition: all 0.3s ease-out !important;
 }
 
 .btn.pill-order-btn:hover {
-    filter: brightness(1.05);
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 32px rgba(119, 194, 107, 0.4) !important;
+    filter: brightness(1.08);
 }
 
 .btn.pill-order-btn:active {
-    transform: translateY(1px);
+    transform: translateY(-1px) !important;
+    transition: all 0.1s ease-out !important;
 }

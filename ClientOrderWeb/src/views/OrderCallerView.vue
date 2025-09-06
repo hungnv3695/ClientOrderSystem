@@ -49,17 +49,48 @@ import OrderNumberTag from '../components/OrderNumberTag.vue'
 import ProcessingOrderTag from '../components/ProcessingOrderTag.vue'
 import CompletedOrderTag from '../components/CompletedOrderTag.vue'
 
+// ===== REACTIVE DATA =====
+
+/** Danh sách tất cả đơn hàng được load từ API và cập nhật realtime qua socket */
 const orders = ref([])
 
+// ===== COMPUTED PROPERTIES =====
+
+/** 
+ * Danh sách đơn hàng đã nhận (status = 'Received')
+ * Hiển thị ở cột đầu tiên, có thể click để chuyển sang Processing
+ */
 const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received'))
+
+/** 
+ * Danh sách đơn hàng đang thực hiện (status = 'Processing')
+ * Hiển thị ở cột thứ hai với chi tiết món ăn và 2 nút action
+ */
 const processingOrders = computed(() => orders.value.filter(o => o.status === 'Processing'))
+
+/** 
+ * Danh sách đơn hàng đã hoàn thành (status = 'Completed')
+ * Hiển thị ở cột thứ ba, được sắp xếp theo orderNumber giảm dần (mới nhất trước)
+ */
 const completedOrders = computed(() =>
     orders.value
         .filter(o => o.status === 'Completed')
         .sort((a, b) => b.orderNumber.localeCompare(a.orderNumber))
 )
+
+/** 
+ * Danh sách đơn hàng đã giao (status = 'Delivered')
+ * Hiển thị ở cột cuối cùng, có thể click để chuyển về Completed
+ */
 const deliveredOrders = computed(() => orders.value.filter(o => o.status === 'Delivered'))
 
+// ===== LIFECYCLE HOOKS =====
+
+/**
+ * Khởi tạo component khi mounted:
+ * 1. Lấy dữ liệu đơn hàng ban đầu qua REST API
+ * 2. Thiết lập kết nối Socket.IO để nhận cập nhật realtime
+ */
 onMounted(async () => {
     // 1) Lấy dữ liệu ban đầu qua REST
     try {
@@ -77,6 +108,15 @@ onMounted(async () => {
     })
 })
 
+// ===== FUNCTIONS =====
+
+/**
+ * Xử lý click vào đơn hàng để thay đổi trạng thái
+ * Gọi API để cập nhật status của đơn hàng
+ * 
+ * @param {string} orderId - ID của đơn hàng cần cập nhật
+ * @param {string} status - Trạng thái mới ('Received', 'Processing', 'Completed', 'Delivered')
+ */
 async function processOrderClick(orderId, status) {
     const order = orders.value.find(o => o.id === orderId)
     if (!order) return
@@ -90,6 +130,12 @@ async function processOrderClick(orderId, status) {
     }
 }
 
+/**
+ * Thông báo đơn hàng đã hoàn thành (announce function)
+ * Placeholder cho các action như phát âm thanh, gọi API thông báo, v.v.
+ * 
+ * @param {Object} order - Đối tượng đơn hàng cần thông báo
+ */
 function announceOrder(order) {
     // Placeholder for announce action (e.g., play audio, call API)
     // console.log('Announce order:', order)
