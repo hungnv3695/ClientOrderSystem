@@ -28,7 +28,7 @@ const routes = [
         name: 'ClientOrder',
         component: ClientOrderView,
         // meta.roles: mảng các vai trò được phép truy cập route này
-        meta: { roles: ['staff', 'manager'] }
+        meta: { roles: ['staff', 'manager', 'device'] }
     },
     // Bảng điều khiển đơn hàng: yêu cầu nhân viên/ quản lý
     {
