@@ -1,0 +1,30 @@
+{
+  "receiptNumber": "HD001",
+  "orderNumber": "ORD-2024-001",
+  "shopName": "QUÁN CAFÉ ABC",
+  "shopAddress": "123 Đường ABC, Quận 1, TP.HCM",
+  "shopPhone": "0123-456-789",
+  "items": [
+    {
+      "itemName": "Cà phê sữa đá",
+      "qty": 2,
+      "unitPrice": 25000
+    },
+    {
+      "itemName": "Bánh mì thịt nướng",
+      "qty": 1,
+      "unitPrice": 30000
+    },
+    {
+      "itemName": "Nước suối",
+      "qty": 1,
+      "unitPrice": 10000
+    }
+  ],
+  "totalAmount": 90000,
+  "discountAmount": 5000,
+  "taxAmount": 0,
+  "finalAmount": 85000,
+  "paymentMethod": "cash",
+  "paidAt": "2024-01-15T10:30:00Z"
+}

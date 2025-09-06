@@ -7,9 +7,11 @@ services:
       - ./ClientOrderWeb:/app
     environment:
       - HOST=0.0.0.0
+      - VITE_PRINT_SERVICE_URL=http://print:3003/api/print
     command: npm run dev -- --host
     depends_on:
       - backend
+      - print
 
   backend:
     build: ./ClientOrderServer
@@ -26,6 +28,20 @@ services:
     depends_on:
       - db
 
+  print:
+    build: ./ClientOrderPrint
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./ClientOrderPrint:/app
+    environment:
+      - NODE_ENV=development
+      - PORT=3003
+    networks:
+      - default
+      - printer_network
+    restart: unless-stopped
+
   db:
     image: postgres:15
     restart: unless-stopped
@@ -38,5 +54,26 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+
 volumes:
   db_data:
+  pgadmin_data:
+
+networks:
+  default:
+    driver: bridge
+  printer_network:
+    driver: bridge
