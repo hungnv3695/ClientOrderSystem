@@ -9,10 +9,24 @@ const companyRoutes = require('./routes/manager/CompanyRoutes');
 const shopRoutes = require('./routes/manager/ShopRoutes');
 const cors = require('cors');
 const errorHandler = require('./middlewares/errorHandler');
+const { httpLogger, requestLogger } = require('./middlewares/requestLogger');
+const logger = require('./utils/logger');
 const config = require('./config/app.config');
+
+// Log application startup
+logger.info('Starting ClientOrderServer application', {
+    nodeEnv: process.env.NODE_ENV,
+    logLevel: process.env.LOG_LEVEL,
+    port: config.port
+});
 
 app.use(cors({ origin: config.cors.origin }));
 app.use(express.json());
+
+// Add logging middlewares
+app.use(httpLogger); // Morgan HTTP logging
+app.use(requestLogger); // Custom request logging
+
 app.use('/api/auth', authRoutes);
 app.use('/api/menus', menuRoutes);
 app.use('/api/orders', orderRoutes);

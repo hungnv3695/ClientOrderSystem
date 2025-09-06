@@ -12,6 +12,9 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+# Create logs directory for Winston
+RUN mkdir -p logs
+
 # 3000 port
 EXPOSE 3000
 
