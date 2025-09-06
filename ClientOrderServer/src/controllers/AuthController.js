@@ -35,6 +35,7 @@ exports.login = async (req, res) => {
     }
 };
 
+// UNUSED - Not used in frontend
 exports.profile = async (req, res) => {
     try {
         const user = req.user;

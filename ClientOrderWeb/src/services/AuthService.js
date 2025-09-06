@@ -40,6 +40,7 @@ export async function login(username, password) {
 /**
  * Đăng xuất người dùng
  * Xóa token và thông tin user khỏi localStorage
+ * // UNUSED - Not used in current frontend
  */
 export function logout() {
     try {
@@ -63,6 +64,7 @@ export function logout() {
 /**
  * Lấy thông tin user hiện tại từ localStorage
  * @returns {Object|null} Thông tin user hoặc null nếu chưa đăng nhập
+ * // UNUSED - Not used in current frontend
  */
 export function getCurrentUser() {
     try {
@@ -80,6 +82,7 @@ export function getCurrentUser() {
 /**
  * Lấy token hiện tại từ localStorage
  * @returns {string|null} Token hoặc null nếu chưa đăng nhập
+ * // UNUSED - Not used in current frontend
  */
 export function getCurrentToken() {
     try {
@@ -93,6 +96,7 @@ export function getCurrentToken() {
 /**
  * Kiểm tra user có đang đăng nhập không
  * @returns {boolean} True nếu đã đăng nhập, False nếu chưa
+ * // UNUSED - Not used in current frontend
  */
 export function isAuthenticated() {
     const token = getCurrentToken()
@@ -103,6 +107,7 @@ export function isAuthenticated() {
 /**
  * Kiểm tra token có hết hạn không (basic check)
  * @returns {boolean} True nếu token có vẻ hợp lệ
+ * // UNUSED - Not used in current frontend
  */
 export function isTokenValid() {
     const token = getCurrentToken()
@@ -121,6 +126,7 @@ export function isTokenValid() {
 
 /**
  * Clear tất cả authentication data (dùng khi có lỗi authentication)
+ * // UNUSED - Not used in current frontend
  */
 export function clearAuthData() {
     try {
