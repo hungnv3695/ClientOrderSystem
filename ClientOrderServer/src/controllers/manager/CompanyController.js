@@ -1,5 +1,6 @@
 // controllers/manager/CompanyController.js
 const CompanyService = require('../../services/manager/CompanyService');
+const logger = require('../../utils/logger');
 
 class CompanyController {
     /**
@@ -95,7 +96,11 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.searchCompanies error:', error);
+            logger.logError(error, {
+                action: 'search_companies',
+                searchParams: req.query,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -117,7 +122,10 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.getCompaniesForDropdown error:', error);
+            logger.logError(error, {
+                action: 'get_companies_dropdown',
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -155,7 +163,11 @@ class CompanyController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.getCompanyById error:', error);
+            logger.logError(error, {
+                action: 'get_company_by_id',
+                companyId: req.params.id,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -173,21 +185,31 @@ class CompanyController {
      */
     async createCompany(req, res) {
         try {
-            console.log('createCompany - Request body:', JSON.stringify(req.body, null, 2));
-
             const { code, name, registration_number, address, phone, email, website, description } = req.body;
+            
+            // Log company creation attempt
+            logger.logOrderEvent('company_creation_attempt', {
+                code,
+                name,
+                registration_number,
+                hasBody: !!req.body,
+                bodyType: typeof req.body,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            });
 
             // Validate input
             if (!req.body || typeof req.body !== 'object') {
+                logger.logOrderEvent('company_creation_failed', {
+                    reason: 'invalid_request_data',
+                    bodyType: typeof req.body,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Dữ liệu request không hợp lệ'
                 });
             }
-
-            console.log('createCompany - Extracted data:', {
-                code, name, registration_number, address, phone, email, website, description
-            });
 
             // Gọi service để tạo công ty
             const result = await CompanyService.createCompany({
@@ -201,18 +223,36 @@ class CompanyController {
                 description
             });
 
-            console.log('createCompany - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi validation từ service
             if (!result.success) {
+                logger.logOrderEvent('company_creation_failed', {
+                    reason: 'service_validation_error',
+                    serviceMessage: result.message,
+                    code,
+                    name,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful company creation
+            logger.logOrderEvent('company_created', {
+                companyId: result.data?.id,
+                code,
+                name,
+                registration_number,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(201).json(result);
 
         } catch (error) {
-            console.error('CompanyController.createCompany error:', error);
+            logger.logError(error, {
+                action: 'create_company',
+                requestBody: JSON.stringify(req.body),
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -233,14 +273,26 @@ class CompanyController {
             const { id } = req.params;
             const { code, name, registration_number, address, phone, email, website, description, status } = req.body;
 
-            console.log('updateCompany - Request params and body:', {
-                id,
-                body: JSON.stringify(req.body, null, 2)
+            // Log company update attempt
+            logger.logOrderEvent('company_update_attempt', {
+                companyId: id,
+                code,
+                name,
+                status,
+                hasBody: !!req.body,
+                bodyType: typeof req.body,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
             });
 
             // Validate ID
             const companyId = parseInt(id);
             if (!companyId || companyId < 1) {
+                logger.logOrderEvent('company_update_failed', {
+                    reason: 'invalid_company_id',
+                    providedId: id,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'ID công ty không hợp lệ'
@@ -249,6 +301,12 @@ class CompanyController {
 
             // Validate input
             if (!req.body || typeof req.body !== 'object') {
+                logger.logOrderEvent('company_update_failed', {
+                    companyId,
+                    reason: 'invalid_request_data',
+                    bodyType: typeof req.body,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Dữ liệu request không hợp lệ'
@@ -268,18 +326,36 @@ class CompanyController {
                 status
             });
 
-            console.log('updateCompany - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi validation từ service
             if (!result.success) {
+                logger.logOrderEvent('company_update_failed', {
+                    companyId,
+                    reason: 'service_validation_error',
+                    serviceMessage: result.message,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful company update
+            logger.logOrderEvent('company_updated', {
+                companyId,
+                code,
+                name,
+                status,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.updateCompany error:', error);
+            logger.logError(error, {
+                action: 'update_company',
+                companyId: req.params.id,
+                requestBody: JSON.stringify(req.body),
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -300,14 +376,22 @@ class CompanyController {
             const { id } = req.params;
             const { status } = req.body;
 
-            console.log('updateCompanyStatus - Request params and body:', {
-                id,
-                status
+            // Log status update attempt
+            logger.logOrderEvent('company_status_update_attempt', {
+                companyId: id,
+                newStatus: status,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
             });
 
             // Validate ID
             const companyId = parseInt(id);
             if (!companyId || companyId < 1) {
+                logger.logOrderEvent('company_status_update_failed', {
+                    reason: 'invalid_company_id',
+                    providedId: id,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'ID công ty không hợp lệ'
@@ -316,6 +400,12 @@ class CompanyController {
 
             // Validate status
             if (!status || !['active', 'inactive'].includes(status)) {
+                logger.logOrderEvent('company_status_update_failed', {
+                    companyId,
+                    reason: 'invalid_status',
+                    providedStatus: status,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Trạng thái phải là "active" hoặc "inactive"'
@@ -325,18 +415,35 @@ class CompanyController {
             // Gọi service để cập nhật trạng thái
             const result = await CompanyService.updateCompanyStatus(companyId, status);
 
-            console.log('updateCompanyStatus - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi từ service
             if (!result.success) {
+                logger.logOrderEvent('company_status_update_failed', {
+                    companyId,
+                    newStatus: status,
+                    reason: 'service_error',
+                    serviceMessage: result.message,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful status update
+            logger.logOrderEvent('company_status_updated', {
+                companyId,
+                newStatus: status,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('CompanyController.updateCompanyStatus error:', error);
+            logger.logError(error, {
+                action: 'update_company_status',
+                companyId: req.params.id,
+                status: req.body.status,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -354,6 +461,14 @@ class CompanyController {
      */
     async deleteCompany(req, res) {
         try {
+            // Log delete attempt (not implemented)
+            logger.logOrderEvent('company_delete_attempt', {
+                companyId: req.params.id,
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                implemented: false
+            });
+
             // TODO: Implement delete company logic
             return res.status(501).json({
                 success: false,
@@ -361,7 +476,11 @@ class CompanyController {
             });
 
         } catch (error) {
-            console.error('CompanyController.deleteCompany error:', error);
+            logger.logError(error, {
+                action: 'delete_company',
+                companyId: req.params.id,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,

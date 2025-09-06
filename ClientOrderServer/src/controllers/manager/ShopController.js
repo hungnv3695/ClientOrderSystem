@@ -1,5 +1,6 @@
 // controllers/manager/ShopController.js
 const ShopService = require('../../services/manager/ShopService');
+const logger = require('../../utils/logger');
 
 class ShopController {
     /**
@@ -99,7 +100,11 @@ class ShopController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.searchShops error:', error);
+            logger.logError(error, {
+                action: 'search_shops',
+                searchParams: req.query,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -121,7 +126,10 @@ class ShopController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.getShopsForDropdown error:', error);
+            logger.logError(error, {
+                action: 'get_shops_dropdown',
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -154,7 +162,11 @@ class ShopController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.getShopsByCompany error:', error);
+            logger.logError(error, {
+                action: 'get_shops_by_company',
+                companyId: req.params.companyId,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -192,7 +204,11 @@ class ShopController {
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.getShopById error:', error);
+            logger.logError(error, {
+                action: 'get_shop_by_id',
+                shopId: req.params.id,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -210,21 +226,32 @@ class ShopController {
      */
     async createShop(req, res) {
         try {
-            console.log('createShop - Request body:', JSON.stringify(req.body, null, 2));
-
             const { code, name, companyId, address, phone, email, managerId, description } = req.body;
+            
+            // Log shop creation attempt
+            logger.logOrderEvent('shop_creation_attempt', {
+                code,
+                name,
+                companyId,
+                managerId,
+                hasBody: !!req.body,
+                bodyType: typeof req.body,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            });
 
             // Validate input
             if (!req.body || typeof req.body !== 'object') {
+                logger.logOrderEvent('shop_creation_failed', {
+                    reason: 'invalid_request_data',
+                    bodyType: typeof req.body,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Dữ liệu request không hợp lệ'
                 });
             }
-
-            console.log('createShop - Extracted data:', {
-                code, name, companyId, address, phone, email, managerId, description
-            });
 
             // Gọi service để tạo shop
             const result = await ShopService.createShop({
@@ -238,18 +265,38 @@ class ShopController {
                 description
             });
 
-            console.log('createShop - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi validation từ service
             if (!result.success) {
+                logger.logOrderEvent('shop_creation_failed', {
+                    reason: 'service_validation_error',
+                    serviceMessage: result.message,
+                    code,
+                    name,
+                    companyId,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful shop creation
+            logger.logOrderEvent('shop_created', {
+                shopId: result.data?.id,
+                code,
+                name,
+                companyId,
+                managerId,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(201).json(result);
 
         } catch (error) {
-            console.error('ShopController.createShop error:', error);
+            logger.logError(error, {
+                action: 'create_shop',
+                requestBody: JSON.stringify(req.body),
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -270,14 +317,28 @@ class ShopController {
             const { id } = req.params;
             const { code, name, companyId, address, phone, email, managerId, description, status } = req.body;
 
-            console.log('updateShop - Request params and body:', {
-                id,
-                body: JSON.stringify(req.body, null, 2)
+            // Log shop update attempt
+            logger.logOrderEvent('shop_update_attempt', {
+                shopId: id,
+                code,
+                name,
+                companyId,
+                managerId,
+                status,
+                hasBody: !!req.body,
+                bodyType: typeof req.body,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
             });
 
             // Validate ID
             const shopId = parseInt(id);
             if (!shopId || shopId < 1) {
+                logger.logOrderEvent('shop_update_failed', {
+                    reason: 'invalid_shop_id',
+                    providedId: id,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'ID shop không hợp lệ'
@@ -286,6 +347,12 @@ class ShopController {
 
             // Validate input
             if (!req.body || typeof req.body !== 'object') {
+                logger.logOrderEvent('shop_update_failed', {
+                    shopId,
+                    reason: 'invalid_request_data',
+                    bodyType: typeof req.body,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Dữ liệu request không hợp lệ'
@@ -305,18 +372,38 @@ class ShopController {
                 status
             });
 
-            console.log('updateShop - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi validation từ service
             if (!result.success) {
+                logger.logOrderEvent('shop_update_failed', {
+                    shopId,
+                    reason: 'service_validation_error',
+                    serviceMessage: result.message,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful shop update
+            logger.logOrderEvent('shop_updated', {
+                shopId,
+                code,
+                name,
+                companyId,
+                managerId,
+                status,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.updateShop error:', error);
+            logger.logError(error, {
+                action: 'update_shop',
+                shopId: req.params.id,
+                requestBody: JSON.stringify(req.body),
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -337,14 +424,22 @@ class ShopController {
             const { id } = req.params;
             const { status } = req.body;
 
-            console.log('updateShopStatus - Request params and body:', {
-                id,
-                status
+            // Log status update attempt
+            logger.logOrderEvent('shop_status_update_attempt', {
+                shopId: id,
+                newStatus: status,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
             });
 
             // Validate ID
             const shopId = parseInt(id);
             if (!shopId || shopId < 1) {
+                logger.logOrderEvent('shop_status_update_failed', {
+                    reason: 'invalid_shop_id',
+                    providedId: id,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'ID shop không hợp lệ'
@@ -353,6 +448,12 @@ class ShopController {
 
             // Validate status
             if (!status || !['active', 'inactive'].includes(status)) {
+                logger.logOrderEvent('shop_status_update_failed', {
+                    shopId,
+                    reason: 'invalid_status',
+                    providedStatus: status,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'Trạng thái phải là "active" hoặc "inactive"'
@@ -362,18 +463,35 @@ class ShopController {
             // Gọi service để cập nhật trạng thái
             const result = await ShopService.updateShopStatus(shopId, status);
 
-            console.log('updateShopStatus - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi từ service
             if (!result.success) {
+                logger.logOrderEvent('shop_status_update_failed', {
+                    shopId,
+                    newStatus: status,
+                    reason: 'service_error',
+                    serviceMessage: result.message,
+                    ip: req.ip
+                });
                 return res.status(400).json(result);
             }
+
+            // Log successful status update
+            logger.logOrderEvent('shop_status_updated', {
+                shopId,
+                newStatus: status,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.updateShopStatus error:', error);
+            logger.logError(error, {
+                action: 'update_shop_status',
+                shopId: req.params.id,
+                status: req.body.status,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
@@ -393,9 +511,21 @@ class ShopController {
         try {
             const { id } = req.params;
 
+            // Log delete attempt
+            logger.logOrderEvent('shop_delete_attempt', {
+                shopId: id,
+                ip: req.ip,
+                userAgent: req.get('User-Agent')
+            });
+
             // Validate ID
             const shopId = parseInt(id);
             if (!shopId || shopId < 1) {
+                logger.logOrderEvent('shop_delete_failed', {
+                    reason: 'invalid_shop_id',
+                    providedId: id,
+                    ip: req.ip
+                });
                 return res.status(400).json({
                     success: false,
                     message: 'ID shop không hợp lệ'
@@ -405,18 +535,32 @@ class ShopController {
             // Gọi service để xóa shop
             const result = await ShopService.deleteShop(shopId);
 
-            console.log('deleteShop - Service result:', JSON.stringify(result, null, 2));
-
             // Nếu có lỗi từ service
             if (!result.success) {
+                logger.logOrderEvent('shop_delete_failed', {
+                    shopId,
+                    reason: 'service_error',
+                    serviceMessage: result.message,
+                    ip: req.ip
+                });
                 return res.status(404).json(result);
             }
+
+            // Log successful shop deletion
+            logger.logOrderEvent('shop_deleted', {
+                shopId,
+                ip: req.ip
+            });
 
             // Trả về kết quả thành công
             return res.status(200).json(result);
 
         } catch (error) {
-            console.error('ShopController.deleteShop error:', error);
+            logger.logError(error, {
+                action: 'delete_shop',
+                shopId: req.params.id,
+                ip: req.ip
+            });
 
             return res.status(500).json({
                 success: false,
