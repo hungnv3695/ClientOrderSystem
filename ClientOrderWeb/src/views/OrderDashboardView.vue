@@ -6,7 +6,7 @@
                 <h5>(Vui lòng đợi đến khi đơn hoàn thành)</h5>
                 <div class="flex-column gap-2 pt-2 flex-grow-1 panel-box">
                     <OrderNumberTag v-for="order in receivedOrders" :key="order.id"
-                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received'" />
+                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received' || order.status === 'Processing'" />
                 </div>
             </BCol>
             <BCol cols="5" class="h-100 d-flex flex-column">
@@ -14,7 +14,7 @@
                 <h5>(Vui lòng đến quầy để nhận đồ)</h5>
                 <div class="flex-column gap-2 pt-2 flex-grow-1 panel-box">
                     <OrderNumberTag v-for="order in completedOrders" :key="order.id"
-                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received'" />
+                        :number="order.orderNumber.slice(-4)" :enabled="false" />
                 </div>
             </BCol>
         </BRow>
@@ -45,7 +45,7 @@ onMounted(async () => {
     })
 })
 
-const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received'))
+const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received' || o.status === 'Processing'))
 const completedOrders = computed(() => orders.value.filter(o => o.status === 'Completed'))
 </script>
 
