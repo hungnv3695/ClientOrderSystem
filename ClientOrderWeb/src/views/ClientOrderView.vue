@@ -48,7 +48,7 @@
                     </div>
                 </BCol>
                 <BCol cols="5" class="h-100 d-flex flex-column">
-                    <div class="lex-grow-1">
+                    <div class="flex-grow-1">
                         <OrderList :order-items="orderItems" @checkout="createOrder" @increase="increaseQuantity"
                             @decrease="decreaseQuantity" />
                     </div>
@@ -57,15 +57,13 @@
             <PaymentModal v-model:show="showPayment" :qr-image="qrImage" :amount="totalAmount" :content="orderNumber"
                 :order-id="orderId" @paid="handlePaid" />
         </BContainer>
-
     </transition>
-
 </template>
 
 <script setup>
-
-
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import FoodCard from '../components/FoodCard.vue'
+import OrderList from '../components/OrderList.vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
 import { SHOP_CODE, buildQrImage } from '../config/appConfig.js'
@@ -92,13 +90,30 @@ const showPayment = ref(false)
 /** Trạng thái hiển thị màn hình chào mừng (true) hay màn hình đặt hàng (false) */
 const isWelcome = ref(true)
 
+// ===== CONSTANTS =====
+
+/** URL đường dẫn trang đăng nhập */
+const URL_LOGIN = '/login'
+
+/** Phương thức thanh toán chuyển khoản ngân hàng */
+const BANK_TRANSFER = 'bank_transfer'
+
+/** Tên sự kiện touchstart cho thiết bị cảm ứng */
+const TOUCH_START_EVENT = 'touchstart'
+
+/** Tên sự kiện click cho chuột */
+const CLICK_EVENT = 'click'
+
+/** Số lượng tối đa cho mỗi món ăn trong giỏ hàng */
+const MAX_QUANTITY = 99
+
+/** Số lượng tối thiểu cho mỗi món ăn trong giỏ hàng */
+const MIN_QUANTITY = 1
+
 // ===== NON-REACTIVE VARIABLES =====
 
 /** Đường dẫn ảnh QR code cho thanh toán */
 var qrImage = ''
-
-/** Nội dung thanh toán (mô tả) */
-var content = ''
 
 /** Mã đơn hàng hiện tại */
 var orderNumber = ''
@@ -125,7 +140,7 @@ onMounted(async () => {
     // Check authentication trước khi load data
     if (!isAuthenticated()) {
         console.log('User not authenticated, redirecting to login')
-        window.location.href = '/login'
+        window.location.href = URL_LOGIN
         return
     }
     
@@ -155,8 +170,8 @@ onUnmounted(() => {
     }
     
     // Remove event listeners
-    window.removeEventListener('click', onActivity)
-    window.removeEventListener('touchstart', onActivity)
+    window.removeEventListener(CLICK_EVENT, onActivity)
+    window.removeEventListener(TOUCH_START_EVENT, onActivity)
 })
 
 // ===== FUNCTIONS =====
@@ -169,8 +184,8 @@ function resetToWelcome() {
     // Xóa timer và bỏ đăng ký sự kiện
     if (inactivityTimer) clearTimeout(inactivityTimer)
     inactivityTimer = null
-    window.removeEventListener('click', onActivity)
-    window.removeEventListener('touchstart', onActivity)
+    window.removeEventListener(CLICK_EVENT, onActivity)
+    window.removeEventListener(TOUCH_START_EVENT, onActivity)
 
     // Đưa UI về trạng thái ban đầu
     isWelcome.value = true
@@ -178,7 +193,6 @@ function resetToWelcome() {
     orderNumber = ''
     orderId = ''
     qrImage = ''
-    content = ''
     showPayment.value = false
 }
 
@@ -200,10 +214,10 @@ function onActivity() {
 function openOrderScreen() {
     isWelcome.value = false
     // Đảm bảo không nhân đôi listener
-    window.removeEventListener('click', onActivity)
-    window.removeEventListener('touchstart', onActivity)
-    window.addEventListener('click', onActivity)
-    window.addEventListener('touchstart', onActivity)
+    window.removeEventListener(CLICK_EVENT, onActivity)
+    window.removeEventListener(TOUCH_START_EVENT, onActivity)
+    window.addEventListener(CLICK_EVENT, onActivity)
+    window.addEventListener(TOUCH_START_EVENT, onActivity)
     onActivity()
 }
 
@@ -217,9 +231,9 @@ function openOrderScreen() {
 function addToOrder(food) {
     const existing = orderItems.value.find(item => item.id === food.id)
     if (existing) {
-        if (existing.quantity < 99) existing.quantity += 1
+        if (existing.quantity < MAX_QUANTITY) existing.quantity += MIN_QUANTITY
     } else {
-        orderItems.value.push({ ...food, quantity: 1 })
+        orderItems.value.push({ ...food, quantity: MIN_QUANTITY })
     }
 }
 
@@ -231,7 +245,7 @@ function addToOrder(food) {
  */
 function increaseQuantity(item) {
     const found = orderItems.value.find(i => i.id === item.id)
-    if (found && found.quantity < 99) found.quantity += 1
+    if (found && found.quantity < MAX_QUANTITY) found.quantity += MIN_QUANTITY
 }
 
 // Hàm giảm số lượng món
@@ -243,24 +257,10 @@ function increaseQuantity(item) {
  */
 function decreaseQuantity(item) {
     const found = orderItems.value.find(i => i.id === item.id)
-    if (found && found.quantity > 1) found.quantity -= 1
-    else if (found && found.quantity === 1) orderItems.value = orderItems.value.filter(i => i.id !== item.id)
+    if (found && found.quantity > MIN_QUANTITY) found.quantity -= MIN_QUANTITY
+    else if (found && found.quantity === MIN_QUANTITY) orderItems.value = orderItems.value.filter(i => i.id !== item.id)
 }
 
-/**
- * Mở modal thanh toán với thông tin đơn hàng
- * @param {string} orderNo - Mã đơn hàng
- * @param {number} amount - Số tiền cần thanh toán
- * @param {string} id - ID đơn hàng (optional)
- */
-function openPaymentModal(orderNo, amount, id) {
-    orderNumber = orderNo
-    if (id) orderId = id
-    qrImage = buildQrImage(amount, orderNumber)
-    showPayment.value = true
-}
-
-//{ shopCode?: string, note?: string, items: Array<{ foodId: number, quantity: number }> }
 /**
  * Tạo đơn hàng mới hoặc cập nhật đơn hàng hiện tại
  * Nếu đã có orderId thì cập nhật, ngược lại tạo mới
@@ -272,14 +272,14 @@ async function createOrder() {
     // Check authentication trước khi gọi API
     if (!isAuthenticated()) {
         console.log('User not authenticated during order creation')
-        window.location.href = '/login'
+        window.location.href = URL_LOGIN
         return
     }
 
     try {
         // Lấy device code từ current device (thiết bị đang dùng để order)
         const currentDevice = getCurrentDevice()
-        const deviceCode = currentDevice?.code || 'DV001' // fallback
+        const deviceCode = currentDevice.code
 
         const orderParam = {
             shopCode: SHOP_CODE,
@@ -289,7 +289,7 @@ async function createOrder() {
                 name: item.name,
                 price: item.price,
                 foodId: Number(item.id),
-                quantity: Number(item.quantity) || 1,
+                quantity: Number(item.quantity) || MIN_QUANTITY,
             })),
         }
 
@@ -305,7 +305,11 @@ async function createOrder() {
         
         if (result === 'success' || (result && result.id)) {
             if (!orderId && result.id) orderId = result.id
-            openPaymentModal(result.orderNumber, result.totalPrice)
+            // Open payment modal
+            orderNumber = result.orderNumber
+            if (result.id) orderId = result.id
+            qrImage = buildQrImage(result.totalPrice, result.orderNumber)
+            showPayment.value = true
         }
         
     } catch (error) {
@@ -329,7 +333,7 @@ async function createOrder() {
 async function handlePaid() {
     try {
         const receipt = await createReceipt(orderId, {
-            paymentMethod: 'bank_transfer',
+            paymentMethod: BANK_TRANSFER,
         })
         
         // In hóa đơn nếu có máy in thông qua local service - không block payment
@@ -356,14 +360,9 @@ async function handlePaid() {
         }
 
         setTimeout(() => {
-            showPayment.value = false
-            orderItems.value = []
-            orderNumber = ''
-            orderId = ''
-            isWelcome.value = true
+            resetToWelcome()
         }, 5000) // 5 giây sau khi thanh toán
     } catch (error) {
-        console.error('Payment failed:', error)
         console.error('Error details:', {
             message: error.message,
             response: error.response?.data,
@@ -382,7 +381,6 @@ async function handlePaid() {
         alert('Có lỗi xảy ra khi thanh toán: ' + errorMessage)
     }
 }
-
 </script>
 
 <style scoped>
@@ -402,15 +400,11 @@ async function handlePaid() {
     /* Chrome, Safari */
 }
 
-/* Header height */
-.order-header {
-    height: 72px;
-}
-
 /* Menu container layout fix */
 .order-screen {
     height: 100vh;
     overflow: hidden;
+    background: linear-gradient(135deg, #2d5016 0%, #1a2f0a 100%);
 }
 
 .order-screen .flex-grow-1 {
@@ -485,37 +479,6 @@ async function handlePaid() {
     transition: all 0.1s ease-out !important;
 }
 
-h1.title {
-    padding-bottom: 10px;
-    padding-top: 10px;
-    background: var(--nature-green);
-}
-
-/* Back button placed inside the title column (absolute on the left) */
-.header-back-btn {
-    position: absolute;
-    left: 17px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 56px;
-    height: 56px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    background: var(--nature-green);
-    color: #000;
-    border: none;
-    padding-left: 10px;
-    border-radius: 0 !important;
-    /* square corners */
-}
-
-.header-back-btn:hover,
-.header-back-btn:active {
-    background: var(--nature-green-dark);
-}
-
 .drop-enter-active {
     animation: drop-in 1s cubic-bezier(.25, 1.7, .5, 1.15);
 }
@@ -535,11 +498,6 @@ h1.title {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
-}
-
-/* ===== ORDER SCREEN STYLING ===== */
-.order-screen {
-    background: linear-gradient(135deg, #2d5016 0%, #1a2f0a 100%);
 }
 
 /* Responsive cho order header */
