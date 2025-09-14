@@ -56,16 +56,17 @@ class PrintController {
             const {
                 printerIp = process.env.DEFAULT_PRINTER_IP,
                 port = process.env.DEFAULT_PRINTER_PORT,
-                deviceId = process.env.DEFAULT_DEVICE_ID,
+                //deviceId = process.env.DEFAULT_DEVICE_ID,
                 receiptData
             } = req.body;
 
-            // Validate input
+            // Override deviceId to use the correct Epson device ID
+            const epsonDeviceId = 'local_printer'; // Epson printers expect this specific device ID            // Validate input
             if (!receiptData) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Thiếu dữ liệu hóa đơn (receiptData)'
-                });
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu dữ liệu hóa đơn (receiptData)'
+            });
             }
 
             if (!printerIp) {
@@ -78,7 +79,7 @@ class PrintController {
             logger.info(`Printing receipt: ${receiptData.receiptNumber || 'N/A'}`);
 
             // Tạo URL cho máy in Epson (giống như Epson SDK)
-            const printerUrl = `http://${printerIp}${port ? `:${port}` : ''}/cgi-bin/epos/service.cgi?devid=${deviceId}&timeout=30000`;
+            const printerUrl = `http://${printerIp}${port ? `:${port}` : ''}/cgi-bin/epos/service.cgi?devid=${epsonDeviceId}&timeout=30000`;
 
             // Tạo SOAP envelope với ePOS-Print XML (giống như SDK)
             const printContent = createReceiptContent(receiptData);

@@ -137,7 +137,9 @@ async function testPrinterConnection(printerIp, port = '', deviceId = 'local_pri
     const axios = require('axios');
     
     try {
-        const printerUrl = `http://${printerIp}${port ? `:${port}` : ''}/cgi-bin/epos/service.cgi?devid=${deviceId}&timeout=5000`;
+        // Always use local_printer for Epson compatibility
+        const epsonDeviceId = 'local_printer';
+        const printerUrl = `http://${printerIp}${port ? `:${port}` : ''}/cgi-bin/epos/service.cgi?devid=${epsonDeviceId}&timeout=5000`;
         
         // Send empty print command to test connection
         const testEnvelope = `<?xml version="1.0" encoding="utf-8"?>
