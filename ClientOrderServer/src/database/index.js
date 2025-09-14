@@ -20,6 +20,8 @@ const Receipt = require('./models/receipt.model')(sequelize, DataTypes);
 const ReceiptItem = require('./models/receiptItem.model')(sequelize, DataTypes);
 const Company = require('./models/company.model')(sequelize, DataTypes);
 const Shop = require('./models/shop.model')(sequelize, DataTypes);
+const DeviceType = require('./models/deviceType.model')(sequelize, DataTypes);
+const Device = require('./models/device.model')(sequelize, DataTypes);
 
 // Associations (Many-to-Many)
 Menu.belongsToMany(Food, { through: MenuFood, foreignKey: 'menu_id', otherKey: 'food_id', as: 'food' });
@@ -48,6 +50,14 @@ User.belongsTo(Shop, { foreignKey: 'shop_id', as: 'shop' });
 // Shop.manager -> User (manager_id) (optional)
 User.hasMany(Shop, { foreignKey: 'manager_id', as: 'managedShops' });
 Shop.belongsTo(User, { foreignKey: 'manager_id', as: 'manager' });
+
+// Device - User associations
+User.hasMany(Device, { foreignKey: 'user_id', as: 'devices' });
+Device.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// DeviceType - Device associations
+DeviceType.hasMany(Device, { foreignKey: 'type', sourceKey: 'code', as: 'devices' });
+Device.belongsTo(DeviceType, { foreignKey: 'type', targetKey: 'code', as: 'deviceType' });
 
 // Keep seeding for menu/food only
 async function seedInitialData() {
@@ -145,6 +155,86 @@ async function seedInitialData() {
         } catch (uErr) {
             console.error('User seed failed:', uErr);
         }
+
+        // Seed DeviceType data
+        try {
+            const [printerType, printerCreated] = await DeviceType.findOrCreate({
+                where: { code: 'PRT' },
+                defaults: {
+                    code: 'PRT',
+                    name: 'printer',
+                    description: 'máy in hóa đơn'
+                }
+            });
+
+            const [tabletType, tabletCreated] = await DeviceType.findOrCreate({
+                where: { code: 'TBL' },
+                defaults: {
+                    code: 'TBL',
+                    name: 'tablet',
+                    description: 'máy tính bảng'
+                }
+            });
+
+            console.log('DeviceType seed status => printer:', printerCreated ? 'created' : 'exists',
+                ', tablet:', tabletCreated ? 'created' : 'exists');
+        } catch (dtErr) {
+            console.error('DeviceType seed failed:', dtErr);
+        }
+
+        // Seed Device data
+        try {
+            // Sử dụng user device có sẵn (username: 'device', id: 3)
+            const existingDeviceUser = await User.findOne({
+                where: { username: 'device', role: 'device' }
+            });
+
+            if (!existingDeviceUser) {
+                console.log('Device user not found, please ensure device user exists');
+                return;
+            }
+
+            console.log('Using existing device user - ID:', existingDeviceUser.id, 'Username:', existingDeviceUser.username);
+
+            // Seed printer device
+            const [printerDevice, printerDeviceCreated] = await Device.findOrCreate({
+                where: { code: 'PRT00001' },
+                defaults: {
+                    code: 'PRT00001',
+                    name: 'Epson TM-M10',
+                    serialNumber: 'SN00000001',
+                    brand: 'EPSON',
+                    ip: '192.168.11.9',
+                    port: '8008',
+                    type: 'PRT',
+                    status: 'used',
+                    userId: existingDeviceUser.id,
+                    note: 'máy in hóa đơn số 1'
+                }
+            });
+
+            // Seed tablet device
+            const [tabletDevice, tabletDeviceCreated] = await Device.findOrCreate({
+                where: { code: 'KSK001' },
+                defaults: {
+                    code: 'KSK001',
+                    name: 'Surface pro 5',
+                    serialNumber: 'SN00000012',
+                    brand: 'Microsoft',
+                    ip: '192.168.11.6',
+                    port: '5173',
+                    type: 'TBL',
+                    status: 'used',
+                    userId: existingDeviceUser.id,
+                    note: 'máy tính bảng order số 1'
+                }
+            });
+
+            console.log('Device seed status => printer device:', printerDeviceCreated ? 'created' : 'exists',
+                ', tablet device:', tabletDeviceCreated ? 'created' : 'exists');
+        } catch (dErr) {
+            console.error('Device seed failed:', dErr);
+        }
     } catch (err) {
         console.error('Seed pre-check failed:', err);
     }
@@ -171,4 +261,6 @@ module.exports = {
     ReceiptItem,
     Company,
     Shop,
+    Device,
+    DeviceType,
 }

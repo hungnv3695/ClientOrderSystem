@@ -127,7 +127,11 @@ async function createReceiptByOrderId(orderId, options = {}) {
                 await ReceiptItem.bulkCreate(itemRows, { transaction: t });
             }
 
-            // 7) Commit và trả về receipt (plain) kèm items bên trong
+            // 7) Cập nhật paymentStatus của Order thành PAID
+            order.paymentStatus = PAYMENT_STATUS.PAID;
+            await order.save({ transaction: t });
+
+            // 8) Commit và trả về receipt (plain) kèm items bên trong
             await t.commit();
             const plain = typeof receipt.get === 'function' ? receipt.get({ plain: true }) : receipt;
             return { ...plain, items };
