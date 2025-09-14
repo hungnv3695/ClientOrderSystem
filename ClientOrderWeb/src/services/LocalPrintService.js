@@ -10,8 +10,8 @@ import { PRINT_SERVICE_URL } from '../config/appConfig.js'
 
 // ===== CONSTANTS =====
 
-/** Timeout mặc định cho print operations - tăng lên cho máy in thật */
-const DEFAULT_TIMEOUT = 35000
+/** Timeout mặc định cho print operations - giảm xuống để tránh browser timeout */
+const DEFAULT_TIMEOUT = 15000
 
 /** Print service endpoints */
 const PRINT_ENDPOINTS = {
@@ -51,7 +51,18 @@ async function handleFetchResponse(response) {
     }
 
     if (!response.ok) {
-        throw new Error(result.message || `HTTP Error: ${response.status}`)
+        const errorMessage = result.message || `HTTP Error: ${response.status}`
+        
+        // Xử lý các lỗi printer phổ biến
+        if (errorMessage.includes('DeviceNotFound')) {
+            throw new Error('Không thể kết nối đến máy in. Vui lòng kiểm tra máy in đã bật và kết nối mạng.')
+        } else if (errorMessage.includes('timeout')) {
+            throw new Error('Máy in không phản hồi. Vui lòng kiểm tra kết nối mạng.')
+        } else if (errorMessage.includes('Unauthorized') || errorMessage.includes('401')) {
+            throw new Error('Không có quyền truy cập máy in. Kiểm tra cài đặt máy in.')
+        }
+        
+        throw new Error(errorMessage)
     }
 
     return result
@@ -65,6 +76,8 @@ async function handleFetchResponse(response) {
  * @returns {Promise<Object>} Response data
  */
 async function safeFetch(url, options = {}, timeout = DEFAULT_TIMEOUT) {
+    console.log(`Making request to: ${url} with timeout: ${timeout}ms`)
+    
     try {
         const response = await fetch(url, {
             ...options,
@@ -79,12 +92,12 @@ async function safeFetch(url, options = {}, timeout = DEFAULT_TIMEOUT) {
     } catch (error) {
         console.error('Fetch error:', error)
         
-        if (error.name === 'AbortError') {
-            throw new Error('Timeout khi gọi print service')
+        if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+            throw new Error(`Timeout khi gọi print service (${timeout/1000}s). Kiểm tra kết nối mạng và máy in.`)
         } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
             throw new Error('Không thể kết nối đến print service. Vui lòng kiểm tra ClientOrderPrint service đang chạy.')
         } else {
-            throw error
+            throw new Error(`Lỗi khi in hóa đơn: ${error.message}`)
         }
     }
 }
@@ -125,14 +138,18 @@ export async function checkPrintServiceHealth() {
  * @returns {Promise<Object>} { success: boolean, message: string, data?: any }
  */
 export async function printReceipt(printerIp, port = '', deviceId = 'local_printer', receiptData) {
+    console.log('=== PRINT RECEIPT START ===')
+    console.log('Printer config:', { printerIp, port, deviceId })
+    console.log('Receipt data:', receiptData)
+    
     try {
-        console.log('Printing receipt via local service:', { printerIp, deviceId })
-
         // Check print service health first
+        console.log('Checking print service health...')
         const serviceHealthy = await checkPrintServiceHealth()
         if (!serviceHealthy) {
             throw new Error('Print service không hoạt động. Vui lòng kiểm tra ClientOrderPrint service.')
         }
+        console.log('Print service is healthy')
 
         // Validate input data
         if (!printerIp) {
@@ -149,22 +166,28 @@ export async function printReceipt(printerIp, port = '', deviceId = 'local_print
             receiptData
         }
 
+        console.log('Sending print request:', requestBody)
         const url = buildPrintServiceUrl(PRINT_ENDPOINTS.RECEIPT)
+        console.log('Print service URL:', url)
+        
         const result = await safeFetch(url, {
             method: 'POST',
             body: JSON.stringify(requestBody)
         })
 
         console.log('Print successful:', result)
+        console.log('=== PRINT RECEIPT END ===')
         
         return {
             success: true,
-            message: result.message,
+            message: result.message || 'In hóa đơn thành công',
             data: result.data
         }
 
     } catch (error) {
-        console.error('Print receipt error:', error)
+        console.error('=== PRINT RECEIPT ERROR ===')
+        console.error('Error details:', error)
+        console.error('Stack trace:', error.stack)
         throw new Error(error.message || 'Lỗi không xác định khi in hóa đơn')
     }
 }
