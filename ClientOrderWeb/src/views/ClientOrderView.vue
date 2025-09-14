@@ -65,10 +65,12 @@
 <script setup>
 
 
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
-import { SHOP_CODE, DEVICE_CODE, buildQrImage, getPrinterConfig } from '../config/appConfig.js'
+import { SHOP_CODE, buildQrImage } from '../config/appConfig.js'
+import { getCurrentDevice, getPrinterConfigFromDevice } from '../services/AuthService.js'
+import { isAuthenticated } from '../utils/authUtils.js'
 
 // Import print functions từ LocalPrintService
 async function loadPrintService() {
@@ -120,7 +122,41 @@ const totalAmount = computed(() =>
  * Khởi tạo component và load dữ liệu menu khi component được mount
  */
 onMounted(async () => {
-    menuItems.value = await fetchMenu()
+    // Check authentication trước khi load data
+    if (!isAuthenticated()) {
+        console.log('User not authenticated, redirecting to login')
+        window.location.href = '/login'
+        return
+    }
+    
+    try {
+        menuItems.value = await fetchMenu()
+    } catch (error) {
+        console.error('Failed to load menu:', error)
+        // Nếu API call fail do authentication, axios interceptor sẽ handle
+        // Nếu là lỗi khác, có thể hiển thị thông báo
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            // Authentication error sẽ được handle bởi axios interceptor
+            return
+        }
+        // Handle other errors
+        alert('Không thể tải menu. Vui lòng thử lại.')
+    }
+})
+
+/**
+ * Cleanup khi component bị unmount
+ */
+onUnmounted(() => {
+    // Clear timer khi component bị destroy
+    if (inactivityTimer) {
+        clearTimeout(inactivityTimer)
+        inactivityTimer = null
+    }
+    
+    // Remove event listeners
+    window.removeEventListener('click', onActivity)
+    window.removeEventListener('touchstart', onActivity)
 })
 
 // ===== FUNCTIONS =====
@@ -233,30 +269,56 @@ function openPaymentModal(orderNo, amount, id) {
 async function createOrder() {
     if (!orderItems.value.length) return
 
-    const orderParam = {
-        shopCode: SHOP_CODE,
-        deviceCode: DEVICE_CODE,
-        note: 'No special requests',
-        items: orderItems.value.map(item => ({
-            name: item.name,
-            price: item.price,
-            foodId: Number(item.id),
-            quantity: Number(item.quantity) || 1,
-        })),
+    // Check authentication trước khi gọi API
+    if (!isAuthenticated()) {
+        console.log('User not authenticated during order creation')
+        window.location.href = '/login'
+        return
     }
 
-    // Nếu đã có mã đơn hàng, cập nhật chi tiết
-    if (orderId) {
-        const result = await updateExistingOrder(orderId, orderParam)
+    try {
+        // Lấy device code từ current device (thiết bị đang dùng để order)
+        const currentDevice = getCurrentDevice()
+        const deviceCode = currentDevice?.code || 'DV001' // fallback
+
+        const orderParam = {
+            shopCode: SHOP_CODE,
+            deviceCode: deviceCode,
+            note: 'No special requests',
+            items: orderItems.value.map(item => ({
+                name: item.name,
+                price: item.price,
+                foodId: Number(item.id),
+                quantity: Number(item.quantity) || 1,
+            })),
+        }
+
+        console.log('Creating order with device:', deviceCode, 'from current device:', currentDevice)
+
+        let result;
+        // Nếu đã có mã đơn hàng, cập nhật chi tiết
+        if (orderId) {
+            result = await updateExistingOrder(orderId, orderParam)
+        } else {
+            result = await submitOrder(orderParam)
+        }
+        
         if (result === 'success' || (result && result.id)) {
+            if (!orderId && result.id) orderId = result.id
             openPaymentModal(result.orderNumber, result.totalPrice)
         }
-    } else {
-        const result = await submitOrder(orderParam)
-        if (result === 'success' || (result && result.id)) {
-            orderId = result.id
-            openPaymentModal(result.orderNumber, result.totalPrice)
+        
+    } catch (error) {
+        console.error('Order creation failed:', error)
+        
+        // Authentication errors sẽ được handle bởi axios interceptor
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            return // Axios interceptor sẽ redirect
         }
+        
+        // Handle other errors
+        const errorMessage = error.response?.data?.message || error.message || 'Không thể tạo đơn hàng'
+        alert(`Có lỗi xảy ra: ${errorMessage}. Vui lòng thử lại.`)
     }
 }
 
@@ -274,13 +336,22 @@ async function handlePaid() {
         if (receipt) {
             try {
                 const { printReceipt, createReceiptData } = await loadPrintService()
-                const printerConfig = getPrinterConfig(DEVICE_CODE);
-                const receiptData = createReceiptData(receipt);
-                await printReceipt(printerConfig.printerIp, printerConfig.port, printerConfig.deviceId, receiptData);
-                console.log('Receipt printed successfully');
+                
+                // Lấy config máy in từ device info của user
+                let printerConfig = getPrinterConfigFromDevice()
+                
+                if (printerConfig) {
+                    console.log('Using printer config:', printerConfig)
+                    const receiptData = createReceiptData(receipt);
+                    await printReceipt(printerConfig.printerIp, printerConfig.port, printerConfig.deviceId, receiptData);
+                    console.log('Receipt printed successfully');
+                } else {
+                    console.warn('No printer config available, skipping print')
+                }
             } catch (printError) {
                 console.warn('Print failed but payment completed:', printError.message);
-                // TODO: Show notification về print error nhưng payment đã thành công
+                // Show user-friendly notification
+                alert(`Thanh toán thành công!\n\nLưu ý: ${printError.message}\nVui lòng liên hệ nhân viên để nhận hóa đơn.`);
             }
         }
 
@@ -299,8 +370,16 @@ async function handlePaid() {
             status: error.response?.status,
             orderId: orderId
         });
-        // Có thể hiển thị thông báo lỗi cho người dùng
-        alert('Có lỗi xảy ra khi thanh toán: ' + (error.response?.data?.message || error.message || 'Vui lòng thử lại'))
+        
+        // Check if it's an authentication error
+        if (error.response?.status === 401 || error.response?.status === 403) {
+            // Authentication error sẽ được handle bởi axios interceptor
+            return
+        }
+        
+        // Handle other errors
+        const errorMessage = error.response?.data?.message || error.message || 'Vui lòng thử lại'
+        alert('Có lỗi xảy ra khi thanh toán: ' + errorMessage)
     }
 }
 

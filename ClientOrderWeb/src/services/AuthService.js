@@ -9,12 +9,18 @@ import { authApi } from '../constants/apiHelpers'
  * Đăng nhập người dùng
  * @param {string} username - Tên đăng nhập
  * @param {string} password - Mật khẩu
+ * @param {string} deviceCode - Mã thiết bị (optional)
  * @returns {Object} Thông tin user đã đăng nhập
  * @throws {Error} Nếu đăng nhập thất bại
  */
-export async function login(username, password) {
+export async function login(username, password, deviceCode = null) {
     try {
-        const response = await authApi.login(username, password)
+        const requestBody = { username, password }
+        if (deviceCode) {
+            requestBody.deviceCode = deviceCode
+        }
+        
+        const response = await authApi.login(requestBody.username, requestBody.password, requestBody.deviceCode)
 
         // Debug log để kiểm tra response
         console.log('Login response:', { success: response?.success, data: response?.data })
@@ -75,6 +81,66 @@ export function getCurrentUser() {
         return JSON.parse(userStr)
     } catch (error) {
         console.error('Error parsing user data from localStorage:', error)
+        return null
+    }
+}
+
+/**
+ * Lấy thông tin device hiện tại từ user
+ * @returns {Object|null} Thông tin device hiện tại hoặc null nếu không có
+ */
+export function getCurrentDevice() {
+    try {
+        const user = getCurrentUser()
+        if (!user || !user.currentDevice) {
+            return null
+        }
+        return user.currentDevice
+    } catch (error) {
+        console.error('Error getting current device info:', error)
+        return null
+    }
+}
+
+/**
+ * Lấy thông tin máy in từ user
+ * @returns {Object|null} Thông tin máy in hoặc null nếu không có
+ */
+export function getPrinterDevice() {
+    try {
+        const user = getCurrentUser()
+        if (!user || !user.printerDevice) {
+            return null
+        }
+        return user.printerDevice
+    } catch (error) {
+        console.error('Error getting printer device info:', error)
+        return null
+    }
+}
+
+/**
+ * Lấy config máy in từ device info với fallback
+ * @returns {Object|null} Config máy in với ip, port, deviceId
+ */
+export function getPrinterConfigFromDevice() {
+    try {
+        const printerDevice = getPrinterDevice()
+        if (printerDevice && printerDevice.type === 'PRT' && printerDevice.ip) {
+            console.log('Using printer config from device info:', printerDevice)
+            return {
+                printerIp: printerDevice.ip,
+                port: printerDevice.port || '80', // Default HTTP port cho Epson
+                deviceId: printerDevice.code,
+                name: printerDevice.name,
+                brand: printerDevice.brand
+            }
+        }
+        
+        console.warn('No valid printer device found in user info, trying fallback config')
+        return null
+    } catch (error) {
+        console.error('Error getting printer config from device:', error)
         return null
     }
 }

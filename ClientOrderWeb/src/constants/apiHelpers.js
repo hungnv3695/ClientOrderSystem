@@ -127,7 +127,13 @@ export const receiptsApi = {
 
 // Auth
 export const authApi = {
-    login: (username, password) => apiPost(API_ENDPOINTS.AUTH.LOGIN, { username, password }),
+    login: (username, password, deviceCode = null) => {
+        const requestData = { username, password }
+        if (deviceCode) {
+            requestData.deviceCode = deviceCode
+        }
+        return apiPost(API_ENDPOINTS.AUTH.LOGIN, requestData)
+    },
 }
 
 // Company
