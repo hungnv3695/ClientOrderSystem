@@ -36,7 +36,6 @@ export async function fetchMenu(menuId = 1) {
  */
 export async function submitOrder(orderItems) {
     try {
-        console.log('Submitting order:', orderItems)
         const response = await ordersApi.create(orderItems)
         
         // Trả về kết quả thành công hay thất bại
@@ -92,7 +91,6 @@ export async function getPaymentStatus(orderId) {
         const response = await ordersApi.getPaymentStatus(orderId)
         
         if (response?.success === true) {
-            console.log('Payment status:', response.data.paid)
             return !!response.data?.paid
         }
         throw new Error(response?.message || 'Failed to get payment status')
@@ -153,5 +151,3 @@ export async function createReceipt(orderId, data = {}) {
         throw error
     }
 }
-
-

@@ -69,6 +69,8 @@ import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../s
 import { buildQrImage } from '../config/appConfig.js'
 import { getCurrentDevice, getCurrentShop, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
+import { API_STATUS_CODES, STRING } from '../constants/app.constants.js'
+import { CLIENT_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
 
 // Import print functions từ LocalPrintService
 async function loadPrintService() {
@@ -110,16 +112,22 @@ const MAX_QUANTITY = 99
 /** Số lượng tối thiểu cho mỗi món ăn trong giỏ hàng */
 const MIN_QUANTITY = 1
 
+/** Thời gian chờ sau khi thanh toán thành công (ms) */
+const WAIT_TIME_AFTER_PAID = 5000
+
+/** Thời gian chờ sau khi vào màn hình order (ms) */
+const ORDER_SCREEN_TIME_OUT = 60000
+
 // ===== NON-REACTIVE VARIABLES =====
 
 /** Đường dẫn ảnh QR code cho thanh toán */
-var qrImage = ''
+var qrImage = STRING.EMPTY
 
 /** Mã đơn hàng hiện tại */
-var orderNumber = ''
+var orderNumber = STRING.EMPTY
 
 /** ID đơn hàng hiện tại từ database */
-let orderId = ''
+let orderId = STRING.EMPTY
 
 /** Timer theo dõi thời gian không hoạt động của người dùng */
 let inactivityTimer = null
@@ -139,7 +147,6 @@ const totalAmount = computed(() =>
 onMounted(async () => {
     // Check authentication trước khi load data
     if (!isAuthenticated()) {
-        console.log('User not authenticated, redirecting to login')
         window.location.href = URL_LOGIN
         return
     }
@@ -148,14 +155,13 @@ onMounted(async () => {
         menuItems.value = await fetchMenu()
     } catch (error) {
         console.error('Failed to load menu:', error)
-        // Nếu API call fail do authentication, axios interceptor sẽ handle
-        // Nếu là lỗi khác, có thể hiển thị thông báo
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            // Authentication error sẽ được handle bởi axios interceptor
+        
+        // Authentication error sẽ được handle bởi axios interceptor
+        if (error.response?.status === API_STATUS_CODES.UNAUTHORIZED || error.response?.status === API_STATUS_CODES.FORBIDDEN) {
             return
         }
-        // Handle other errors
-        alert('Không thể tải menu. Vui lòng thử lại.')
+        
+        alert(CLIENT_ORDER_ALERT_MESS.MENU_LOAD_ERROR)
     }
 })
 
@@ -190,9 +196,9 @@ function resetToWelcome() {
     // Đưa UI về trạng thái ban đầu
     isWelcome.value = true
     orderItems.value = []
-    orderNumber = ''
-    orderId = ''
-    qrImage = ''
+    orderNumber = STRING.EMPTY
+    orderId = STRING.EMPTY
+    qrImage = STRING.EMPTY
     showPayment.value = false
 }
 
@@ -204,7 +210,7 @@ function onActivity() {
     if (inactivityTimer) clearTimeout(inactivityTimer)
     inactivityTimer = setTimeout(() => {
         resetToWelcome()
-    }, 60000)
+    }, ORDER_SCREEN_TIME_OUT)
 }
 
 /**
@@ -221,12 +227,10 @@ function openOrderScreen() {
     onActivity()
 }
 
-// Hàm thêm món vào giỏ hàng
 /**
  * Thêm món ăn vào giỏ hàng.
  * Nếu món đã có trong giỏ, tăng số lượng lên 1 (tối đa 99).
  * Nếu món chưa có, thêm mới với số lượng 1.
- * @param {Object} food - Món ăn cần thêm vào giỏ hàng.
  */
 function addToOrder(food) {
     const existing = orderItems.value.find(item => item.id === food.id)
@@ -237,7 +241,6 @@ function addToOrder(food) {
     }
 }
 
-// Hàm tăng số lượng món
 /**
  * Tăng số lượng món trong giỏ hàng.
  * Nếu món đã có, tăng số lượng lên 1 (tối đa 99).
@@ -248,7 +251,6 @@ function increaseQuantity(item) {
     if (found && found.quantity < MAX_QUANTITY) found.quantity += MIN_QUANTITY
 }
 
-// Hàm giảm số lượng món
 /**
  * Giảm số lượng món trong giỏ hàng.
  * Nếu món đã có và số lượng lớn hơn 1, giảm số lượng xuống 1.
@@ -257,8 +259,12 @@ function increaseQuantity(item) {
  */
 function decreaseQuantity(item) {
     const found = orderItems.value.find(i => i.id === item.id)
-    if (found && found.quantity > MIN_QUANTITY) found.quantity -= MIN_QUANTITY
-    else if (found && found.quantity === MIN_QUANTITY) orderItems.value = orderItems.value.filter(i => i.id !== item.id)
+    if (found && found.quantity > MIN_QUANTITY) {
+        found.quantity -= MIN_QUANTITY 
+    }
+    else if (found && found.quantity === MIN_QUANTITY) {
+        orderItems.value = orderItems.value.filter(i => i.id !== item.id)
+    }
 }
 
 /**
@@ -271,7 +277,6 @@ async function createOrder() {
 
     // Check authentication trước khi gọi API
     if (!isAuthenticated()) {
-        console.log('User not authenticated during order creation')
         window.location.href = URL_LOGIN
         return
     }
@@ -284,13 +289,13 @@ async function createOrder() {
         // Kiểm tra xem user có shop và device không
         if (!shopCode) {
             console.error('No shop code available for current user')
-            alert('Không thể tạo đơn hàng: Thiếu thông tin cửa hàng')
+            alert(CLIENT_ORDER_ALERT_MESS.SHOP_CODE_NOT_FOUND)
             return
         }
         
         if (!currentDevice || !currentDevice.code) {
             console.error('No device code available for current user')
-            alert('Không thể tạo đơn hàng: Thiếu thông tin thiết bị')
+            alert(CLIENT_ORDER_ALERT_MESS.DEVICE_CODE_NOT_FOUND)
             return
         }
 
@@ -308,8 +313,6 @@ async function createOrder() {
             })),
         }
 
-        console.log('Creating order with device:', deviceCode, 'from current device:', currentDevice)
-
         let result;
         // Nếu đã có mã đơn hàng, cập nhật chi tiết
         if (orderId) {
@@ -320,7 +323,7 @@ async function createOrder() {
         
         if (result === 'success' || (result && result.id)) {
             if (!orderId && result.id) orderId = result.id
-            // Open payment modal
+            // Mở payment modal
             orderNumber = result.orderNumber
             if (result.id) orderId = result.id
             qrImage = buildQrImage(result.totalPrice, result.orderNumber)
@@ -331,13 +334,12 @@ async function createOrder() {
         console.error('Order creation failed:', error)
         
         // Authentication errors sẽ được handle bởi axios interceptor
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            return // Axios interceptor sẽ redirect
+        if (error.response?.status === API_STATUS_CODES.UNAUTHORIZED || error.response?.status === API_STATUS_CODES.FORBIDDEN) {
+            return
         }
         
-        // Handle other errors
         const errorMessage = error.response?.data?.message || error.message || 'Không thể tạo đơn hàng'
-        alert(`Có lỗi xảy ra: ${errorMessage}. Vui lòng thử lại.`)
+        alert(CLIENT_ORDER_ALERT_MESS.ORDER_CREATE_ERROR.replace('{errorMessage}', errorMessage))
     }
 }
 
@@ -360,23 +362,20 @@ async function handlePaid() {
                 let printerConfig = getPrinterConfigFromDevice()
                 
                 if (printerConfig) {
-                    console.log('Using printer config:', printerConfig)
                     const receiptData = createReceiptData(receipt);
                     await printReceipt(printerConfig.printerIp, printerConfig.port, printerConfig.deviceId, receiptData);
-                    console.log('Receipt printed successfully');
                 } else {
                     console.warn('No printer config available, skipping print')
                 }
             } catch (printError) {
                 console.warn('Print failed but payment completed:', printError.message);
-                // Show user-friendly notification
-                alert(`Thanh toán thành công!\n\nLưu ý: ${printError.message}\nVui lòng liên hệ nhân viên để nhận hóa đơn.`);
+                alert(CLIENT_ORDER_ALERT_MESS.PAYMENT_SUCCESS_WITH_PRINT_ERROR.replace('{printError}', printError.message));
             }
         }
 
         setTimeout(() => {
             resetToWelcome()
-        }, 5000) // 5 giây sau khi thanh toán
+        }, WAIT_TIME_AFTER_PAID)
     } catch (error) {
         console.error('Error details:', {
             message: error.message,
@@ -386,14 +385,12 @@ async function handlePaid() {
         });
         
         // Check if it's an authentication error
-        if (error.response?.status === 401 || error.response?.status === 403) {
-            // Authentication error sẽ được handle bởi axios interceptor
+        if (error.response?.status === API_STATUS_CODES.UNAUTHORIZED || error.response?.status === API_STATUS_CODES.FORBIDDEN) {
             return
         }
         
-        // Handle other errors
         const errorMessage = error.response?.data?.message || error.message || 'Vui lòng thử lại'
-        alert('Có lỗi xảy ra khi thanh toán: ' + errorMessage)
+        alert(CLIENT_ORDER_ALERT_MESS.PAYMENT_ERROR.replace('{errorMessage}', errorMessage))
     }
 }
 </script>
