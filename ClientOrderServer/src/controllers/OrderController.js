@@ -4,11 +4,15 @@ const logger = require('../utils/logger');
 
 exports.getOrderNumbers = async (req, res) => {
     try {
-        const list = await getOrderNumbersForDashboard();
+        // Lấy shopCode từ user đăng nhập
+        const shopCode = req.user?.shopCode || null;
+        const list = await getOrderNumbersForDashboard(shopCode);
         
         // Log successful dashboard data retrieval
         logger.logOrderEvent('dashboard_data_retrieved', {
             totalOrders: list?.length || 0,
+            shopCode: shopCode,
+            userId: req.user?.id || req.user?.sub,
             ip: req.ip,
             userAgent: req.get('User-Agent')
         });
@@ -17,6 +21,8 @@ exports.getOrderNumbers = async (req, res) => {
     } catch (e) {
         logger.logError(e, {
             action: 'get_order_numbers_dashboard',
+            userId: req.user?.id || req.user?.sub,
+            shopCode: req.user?.shopCode,
             ip: req.ip
         });
         res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -81,7 +87,7 @@ exports.createOrder = async (req, res) => {
 
 exports.updateStatus = async (req, res) => {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, shopCode } = req.body;
     
     // Log status update attempt
     logger.logOrderEvent('status_update_attempt', {
@@ -112,8 +118,9 @@ exports.updateStatus = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Order not found' });
         }
 
-        // Emit lại danh sách sau cập nhật
-        const orders = await getOrdersByStatus();
+        // Emit lại danh sách sau cập nhật - sử dụng shopCode từ database
+        const shopCode = updated.shopCode
+        const orders = await getOrdersByStatus(shopCode);
         
         // Log successful status update and socket emission
         logger.logOrderEvent('status_updated', {
@@ -121,17 +128,19 @@ exports.updateStatus = async (req, res) => {
             newStatus: status,
             oldStatus: updated.previousStatus || 'unknown',
             orderNumber: updated.orderNumber,
+            shopCode: shopCode,
             totalOrdersEmitted: orders?.length || 0,
             ip: req.ip
         });
 
-        emitOrderNumbers('SH123', orders);
+        emitOrderNumbers(shopCode, orders);
         res.json({ success: true, data: updated });
     } catch (e) {
         logger.logError(e, {
             action: 'update_order_status',
             orderId: id,
             newStatus: status,
+            shopCode: shopCode,
             ip: req.ip
         });
         res.status(500).json({ success: false, message: e.message || 'Internal Server Error' });

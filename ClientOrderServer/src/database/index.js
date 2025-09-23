@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const dbConfig = require('../config/db.config');
+const { seedInitialData } = require('./seeders/initialData');
 const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
     host: dbConfig.HOST,
     port: dbConfig.PORT,
@@ -20,6 +21,7 @@ const Receipt = require('./models/receipt.model')(sequelize, DataTypes);
 const ReceiptItem = require('./models/receiptItem.model')(sequelize, DataTypes);
 const Company = require('./models/company.model')(sequelize, DataTypes);
 const Shop = require('./models/shop.model')(sequelize, DataTypes);
+const UserShop = require('./models/userShop.model')(sequelize, DataTypes);
 const DeviceType = require('./models/deviceType.model')(sequelize, DataTypes);
 const Device = require('./models/device.model')(sequelize, DataTypes);
 
@@ -30,6 +32,10 @@ Food.belongsToMany(Menu, { through: MenuFood, foreignKey: 'food_id', otherKey: '
 // Order - Food (Many-to-Many) with extra fields (quantity, unitPrice)
 Order.belongsToMany(Food, { through: OrderFood, foreignKey: 'order_id', otherKey: 'food_id', as: 'foods' });
 Food.belongsToMany(Order, { through: OrderFood, foreignKey: 'food_id', otherKey: 'order_id', as: 'orders' });
+
+// Order - Shop (Many-to-One) via shopCode
+Order.belongsTo(Shop, { foreignKey: 'shopCode', targetKey: 'code', as: 'shop' });
+Shop.hasMany(Order, { foreignKey: 'shopCode', sourceKey: 'code', as: 'orders' });
 
 // Order - Receipt (One-to-Many)
 Order.hasMany(Receipt, { foreignKey: 'order_id', as: 'receipts' });
@@ -43,9 +49,15 @@ ReceiptItem.belongsTo(Receipt, { foreignKey: 'receipt_id', as: 'receipt' });
 Company.hasMany(Shop, { foreignKey: 'company_id', as: 'shops' });
 Shop.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
 
-// Shop - User (One-to-Many)
-Shop.hasMany(User, { foreignKey: 'shop_id', as: 'users' });
-User.belongsTo(Shop, { foreignKey: 'shop_id', as: 'shop' });
+// User - Shop (Many-to-Many through UserShop)
+User.belongsToMany(Shop, { through: UserShop, foreignKey: 'user_id', otherKey: 'shop_id', as: 'shops' });
+Shop.belongsToMany(User, { through: UserShop, foreignKey: 'shop_id', otherKey: 'user_id', as: 'users' });
+
+// UserShop associations
+User.hasMany(UserShop, { foreignKey: 'user_id', as: 'shopAssignments' });
+UserShop.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Shop.hasMany(UserShop, { foreignKey: 'shop_id', as: 'userAssignments' });
+UserShop.belongsTo(Shop, { foreignKey: 'shop_id', as: 'shop' });
 
 // Shop.manager -> User (manager_id) (optional)
 User.hasMany(Shop, { foreignKey: 'manager_id', as: 'managedShops' });
@@ -60,189 +72,16 @@ DeviceType.hasMany(Device, { foreignKey: 'type', sourceKey: 'code', as: 'devices
 Device.belongsTo(DeviceType, { foreignKey: 'type', targetKey: 'code', as: 'deviceType' });
 
 // Keep seeding for menu/food only
-async function seedInitialData() {
-    try {
-        const [foodCount, menuCount, linkCount] = await Promise.all([
-            Food.count(),
-            Menu.count(),
-            MenuFood.count()
-        ]);
-
-        if (foodCount > 0 || menuCount > 0 || linkCount > 0) {
-            console.log('Seed skipped: tables already contain data');
-        } else {
-            const t = await sequelize.transaction();
-            try {
-                const foods = [
-                    { name: 'Bánh mì', price: 20000, description: 'Bánh mì thịt truyền thống', image: 'banh-mi.jpg', isActive: true },
-                    { name: 'Cà phê đen', price: 15000, description: 'Cà phê đen đậm đà', image: 'ca-phe-den.jpg', isActive: true },
-                    { name: 'Cà phê sữa đá', price: 18000, description: 'Cà phê sữa đá thơm ngon', image: 'ca-phe-sua-da.jpg', isActive: true },
-                    { name: 'Trà đá', price: 5000, description: 'Trà đá mát lạnh', image: 'tra-da.jpg', isActive: true },
-                    { name: 'Nước sấu', price: 12000, description: 'Nước sấu Hà Nội', image: 'nuoc-sau.jpg', isActive: true },
-                ];
-
-                const menus = [
-                    { name: 'Menu Sáng', description: 'Thực đơn buổi sáng' },
-                    { name: 'Menu Trưa', description: 'Thực đơn buổi trưa' },
-                ];
-
-                const createdFoods = await Food.bulkCreate(foods, { returning: true, transaction: t });
-                const createdMenus = await Menu.bulkCreate(menus, { returning: true, transaction: t });
-
-                const links = [
-                    { menuId: createdMenus[0].id, foodId: createdFoods[0].id },
-                    { menuId: createdMenus[0].id, foodId: createdFoods[1].id },
-                    { menuId: createdMenus[0].id, foodId: createdFoods[3].id },
-                    { menuId: createdMenus[1].id, foodId: createdFoods[0].id },
-                    { menuId: createdMenus[1].id, foodId: createdFoods[2].id },
-                    { menuId: createdMenus[1].id, foodId: createdFoods[4].id },
-                ];
-
-                await MenuFood.bulkCreate(links, { transaction: t });
-
-                await t.commit();
-                console.log('Seed completed: inserted sample food, menu and relations');
-            } catch (err) {
-                await t.rollback();
-                console.error('Seed failed, transaction rolled back:', err);
-            }
-        }
-
-        // Seed 3 default users with different roles if users table empty
-        try {
-            const bcrypt = require('bcryptjs');
-            const hash = await bcrypt.hash('123456', 10);
-
-            const [managerUser, managerCreated] = await User.findOrCreate({
-                where: { username: 'manager' },
-                defaults: {
-                    username: 'manager',
-                    passwordHash: hash,
-                    role: 'manager',
-                    code: 'MGR001',
-                    email: 'manager@company.com',
-                    status: 'active'
-                },
-            });
-
-            const [staffUser, staffCreated] = await User.findOrCreate({
-                where: { username: 'staff' },
-                defaults: {
-                    username: 'staff',
-                    passwordHash: hash,
-                    role: 'staff',
-                    code: 'STF001',
-                    email: 'staff@company.com',
-                    status: 'active'
-                },
-            });
-
-            const [deviceUser, deviceCreated] = await User.findOrCreate({
-                where: { username: 'device' },
-                defaults: {
-                    username: 'device',
-                    passwordHash: hash,
-                    role: 'device',
-                    code: 'DEV001',
-                    email: 'device@company.com',
-                    status: 'active'
-                },
-            });
-
-            console.log('User seed status => manager:', managerCreated ? 'created' : 'exists',
-                ', staff:', staffCreated ? 'created' : 'exists',
-                ', device:', deviceCreated ? 'created' : 'exists');
-        } catch (uErr) {
-            console.error('User seed failed:', uErr);
-        }
-
-        // Seed DeviceType data
-        try {
-            const [printerType, printerCreated] = await DeviceType.findOrCreate({
-                where: { code: 'PRT' },
-                defaults: {
-                    code: 'PRT',
-                    name: 'printer',
-                    description: 'máy in hóa đơn'
-                }
-            });
-
-            const [tabletType, tabletCreated] = await DeviceType.findOrCreate({
-                where: { code: 'TBL' },
-                defaults: {
-                    code: 'TBL',
-                    name: 'tablet',
-                    description: 'máy tính bảng'
-                }
-            });
-
-            console.log('DeviceType seed status => printer:', printerCreated ? 'created' : 'exists',
-                ', tablet:', tabletCreated ? 'created' : 'exists');
-        } catch (dtErr) {
-            console.error('DeviceType seed failed:', dtErr);
-        }
-
-        // Seed Device data
-        try {
-            // Sử dụng user device có sẵn (username: 'device', id: 3)
-            const existingDeviceUser = await User.findOne({
-                where: { username: 'device', role: 'device' }
-            });
-
-            if (!existingDeviceUser) {
-                console.log('Device user not found, please ensure device user exists');
-                return;
-            }
-
-            console.log('Using existing device user - ID:', existingDeviceUser.id, 'Username:', existingDeviceUser.username);
-
-            // Seed printer device
-            const [printerDevice, printerDeviceCreated] = await Device.findOrCreate({
-                where: { code: 'PRT00001' },
-                defaults: {
-                    code: 'PRT00001',
-                    name: 'Epson TM-M10',
-                    serialNumber: 'SN00000001',
-                    brand: 'EPSON',
-                    ip: '192.168.11.9',
-                    port: '8008',
-                    type: 'PRT',
-                    status: 'used',
-                    userId: existingDeviceUser.id,
-                    note: 'máy in hóa đơn số 1'
-                }
-            });
-
-            // Seed tablet device
-            const [tabletDevice, tabletDeviceCreated] = await Device.findOrCreate({
-                where: { code: 'KSK001' },
-                defaults: {
-                    code: 'KSK001',
-                    name: 'Surface pro 5',
-                    serialNumber: 'SN00000012',
-                    brand: 'Microsoft',
-                    ip: '192.168.11.6',
-                    port: '5173',
-                    type: 'TBL',
-                    status: 'used',
-                    userId: existingDeviceUser.id,
-                    note: 'máy tính bảng order số 1'
-                }
-            });
-
-            console.log('Device seed status => printer device:', printerDeviceCreated ? 'created' : 'exists',
-                ', tablet device:', tabletDeviceCreated ? 'created' : 'exists');
-        } catch (dErr) {
-            console.error('Device seed failed:', dErr);
-        }
-    } catch (err) {
-        console.error('Seed pre-check failed:', err);
-    }
-}
-
 sequelize.sync({ alter: true }).then(async () => {
     console.log('Database synchronized');
-    await seedInitialData();
+    
+    // Pass all models to the seed function
+    const models = {
+        Food, Menu, MenuFood, Company, User, Shop, UserShop,
+        DeviceType, Device, sequelize
+    };
+    
+    await seedInitialData(models);
 }).catch(err => {
     console.error('Failed to synchronize database:', err);
 });
@@ -261,6 +100,7 @@ module.exports = {
     ReceiptItem,
     Company,
     Shop,
+    UserShop,
     Device,
     DeviceType,
 }

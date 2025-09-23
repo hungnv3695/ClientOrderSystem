@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
             { fields: ['gateway'] },
             { fields: ['account_number'] },
             { fields: ['code'] },
-            { fields: ['reference_number'] },
+            { unique: true, fields: ['reference_number'], name: 'payment_transactions_reference_number_unique' },
         ],
     });
 

@@ -1,4 +1,4 @@
-const { Order } = require('../database');
+const { Order, PaymentTransaction } = require('../database');
 const { savePaymentTransaction } = require('../services/PaymentTransactionService');
 const { emitOrderNumbers } = require('../socket');
 const { getOrdersByStatus } = require('../services/OrderService');
@@ -13,6 +13,7 @@ exports.receivePayment = async (req, res) => {
         transactionContent: payload.transaction_content || payload.content || payload.transactionContent,
         amount: payload.amountIn || payload.amount,
         code: payload.code,
+        referenceNumber: payload.referenceNumber || payload.reference_number,
         hasPayload: !!payload,
         payloadKeys: Object.keys(payload),
         ip: req.ip,
@@ -20,7 +21,38 @@ exports.receivePayment = async (req, res) => {
     });
 
     try {
-        // Lưu transaction
+        // **IDEMPOTENCY CHECK** - Kiểm tra transaction đã tồn tại chưa
+        const referenceNumber = payload.referenceNumber || payload.reference_number || payload.referenceCode;
+        const transactionContent = payload.transactionContent || payload.content || payload.transaction_content;
+        
+        if (referenceNumber) {
+            const existingTransaction = await PaymentTransaction.findOne({
+                where: { referenceNumber }
+            });
+            
+            if (existingTransaction) {
+                logger.logPaymentEvent('duplicate_webhook_detected', {
+                    referenceNumber,
+                    transactionId: existingTransaction.id,
+                    transactionContent,
+                    message: 'Transaction already processed, skipping',
+                    ip: req.ip
+                });
+                
+                // Trả về success để Sepay không retry
+                return res.json({ 
+                    success: true, 
+                    data: { 
+                        transactionId: existingTransaction.id, 
+                        orderNumber: transactionContent,
+                        duplicate: true 
+                    }, 
+                    message: 'Payment already processed' 
+                });
+            }
+        }
+
+        // Lưu transaction (chỉ khi chưa tồn tại)
         const tx = await savePaymentTransaction(payload);
         
         logger.logPaymentEvent('payment_transaction_saved', {
@@ -30,12 +62,10 @@ exports.receivePayment = async (req, res) => {
             ip: req.ip
         });
 
-        // Suy luận orderNumber (có thể nằm trong payload trực tiếp hoặc trong nội dung mô tả)
-        let orderNumber = payload.orderNumber || payload.code || null;
-        const content = payload.transaction_content || payload.content || payload.transactionContent || '';
-        if (!orderNumber) {
-            const match = content.match(/(SH\w+)/i); // ví dụ pattern orderNumber bắt đầu SH...
-            if (match) orderNumber = match[1];
+        const content = payload.content || '';
+        let orderNumber = '';
+        if (content) {
+            orderNumber = content;
         }
 
         logger.logPaymentEvent('order_number_extracted', {
@@ -69,7 +99,7 @@ exports.receivePayment = async (req, res) => {
                     order.paymentStatus = PAYMENT_STATUS.PAID;
                     await order.save();
 
-                    const orders = await getOrdersByStatus();
+                    const orders = await getOrdersByStatus(order.shopCode);
 
                     // Log successful payment processing
                     logger.logPaymentEvent('payment_completed', {
@@ -84,7 +114,7 @@ exports.receivePayment = async (req, res) => {
                     });
 
                     //Cập nhật orderNumbers trong socket
-                    emitOrderNumbers('SH123', orders);
+                    emitOrderNumbers(order.shopCode, orders);
                 } else {
                     logger.logPaymentEvent('payment_insufficient', {
                         transactionId: tx.id,

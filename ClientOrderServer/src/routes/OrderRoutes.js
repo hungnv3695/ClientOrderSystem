@@ -12,7 +12,8 @@ const { verifyToken, requireRole } = require('../middlewares/auth');
 
 // GET /api/orders/numbers
 // Trả về danh sách số thứ tự đơn hàng hôm nay (phục vụ màn hình Dashboard/Caller)
-router.get('/numbers', orderController.getOrderNumbers);
+// Cần auth để biết shop của user
+router.get('/numbers', verifyToken, orderController.getOrderNumbers);
 
 // POST /api/orders
 // Tạo đơn hàng mới (gọi món). Body chứa thông tin món và shopId.

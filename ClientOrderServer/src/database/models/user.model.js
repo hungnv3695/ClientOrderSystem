@@ -17,16 +17,40 @@ module.exports = (sequelize, DataTypes) => {
         },
         email: { type: DataTypes.STRING(255), allowNull: true },
         phone: { type: DataTypes.STRING(20), allowNull: true },
-        shopId: { type: DataTypes.INTEGER, allowNull: true, field: 'shop_id' },
+        companyId: { type: DataTypes.INTEGER, allowNull: false, field: 'company_id' },
     }, {
         tableName: 'user',
         underscored: true,
         timestamps: true,
         indexes: [
             { unique: true, fields: ['username'] },
-            { fields: ['shop_id'] },
+            { fields: ['company_id'] },
             { fields: ['code'] },
         ],
     });
+    
+    // Associations
+    User.associate = function(models) {
+        // User thuộc về một Company
+        User.belongsTo(models.Company, {
+            foreignKey: 'companyId',
+            as: 'company'
+        });
+        
+        // User có thể thuộc về nhiều Shops (Many-to-Many)
+        User.belongsToMany(models.Shop, {
+            through: models.UserShop,
+            foreignKey: 'userId',
+            otherKey: 'shopId',
+            as: 'shops'
+        });
+        
+        // User có thể có nhiều UserShop assignments
+        User.hasMany(models.UserShop, {
+            foreignKey: 'userId',
+            as: 'shopAssignments'
+        });
+    };
+    
     return User;
 };

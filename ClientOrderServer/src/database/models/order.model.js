@@ -38,6 +38,11 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.TEXT,
                 allowNull: true,
             },
+            shopCode: {
+                type: DataTypes.STRING(8),
+                allowNull: false,
+                field: 'shop_code',
+            },
         },
         {
             tableName: 'order',
@@ -45,6 +50,9 @@ module.exports = (sequelize, DataTypes) => {
             underscored: true,
             indexes: [
                 { unique: true, fields: ['order_number'] },
+                { fields: ['shop_code'] },
+                { fields: ['status'] },
+                { fields: ['shop_code', 'status'] },
             ]
         }
     );

@@ -1,4 +1,4 @@
-const { User, Device, DeviceType } = require('../database');
+const { User, Device, DeviceType, Shop, UserShop } = require('../database');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const config = require('../config/app.config');
@@ -6,12 +6,13 @@ const logger = require('../utils/logger');
 const { USER_ROLES, HTTP_STATUS } = require('../constants/app.constants');
 
 exports.login = async (req, res) => {
-    const { username, password, deviceCode } = req.body || {};
+    const { username, password, deviceCode, shopCode } = req.body || {};
     
     // Log login attempt
     logger.logAuthEvent('login_attempt', {
         username,
         deviceCode,
+        shopCode,
         ip: req.ip,
         userAgent: req.get('User-Agent'),
         hasPassword: !!password
@@ -29,19 +30,44 @@ exports.login = async (req, res) => {
             return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Missing credentials' });
         }
 
-        // Find user
-        const user = await User.findOne({ where: { username } });
+        // Find user with shops (tích hợp shopCode validation)
+        const whereConditions = { username, status: 'active' };
+        const includeConditions = [{
+            model: Shop,
+            as: 'shops',
+            through: {
+                attributes: ['status'],
+                where: { status: 'active' }
+            },
+            where: { status: 'active' }
+        }];
+
+        // Nếu có shopCode, thêm điều kiện filter shop
+        if (shopCode) {
+            includeConditions[0].where.code = shopCode;
+        }
+
+        const user = await User.findOne({ 
+            where: whereConditions,
+            include: includeConditions
+        });
+        
         if (!user) {
+            const reason = shopCode ? 'user_not_found_or_no_shop_access' : 'user_not_found';
             logger.logAuthEvent('login_failed', {
                 username,
                 deviceCode,
-                reason: 'user_not_found',
+                shopCode,
+                reason,
                 ip: req.ip
             });
-            return res.status(HTTP_STATUS.UNAUTHORIZED).json({ success: false, message: 'Invalid username or password' });
+            return res.status(HTTP_STATUS.UNAUTHORIZED).json({ 
+                success: false, 
+                message: shopCode ? 'Invalid username, password, or no access to shop' : 'Invalid username or password' 
+            });
         }
 
-        // Check if user status is active
+        // Check if user status is active (redundant nhưng giữ lại cho safety)
         if (user.status !== 'active') {
             logger.logAuthEvent('login_failed', {
                 username,
@@ -60,6 +86,7 @@ exports.login = async (req, res) => {
             logger.logAuthEvent('login_failed', {
                 username,
                 deviceCode,
+                shopCode,
                 userId: user.id,
                 reason: 'invalid_password',
                 ip: req.ip
@@ -73,6 +100,7 @@ exports.login = async (req, res) => {
                     logger.logAuthEvent('login_failed', {
                     username,
                     deviceCode,
+                    shopCode,
                     userId: user.id,
                     reason: 'device_not_existed',
                     ip: req.ip
@@ -100,6 +128,7 @@ exports.login = async (req, res) => {
                 logger.logAuthEvent('login_failed', {
                     username,
                     deviceCode,
+                    shopCode,
                     userId: user.id,
                     reason: 'device_not_authorized',
                     ip: req.ip
@@ -113,12 +142,12 @@ exports.login = async (req, res) => {
 
         // Success - create token
         const payload = {
-            sub: user.id,
+            id: user.id,
             username: user.username,
             role: user.role,
             code: user.code,
             email: user.email,
-            shopId: user.shopId
+            shopCode: shopCode
         };
 
         // Lấy thông tin devices của user (bao gồm device hiện tại và máy in)
@@ -154,17 +183,7 @@ exports.login = async (req, res) => {
                 }
 
                 if (deviceInfo) {
-                    payload.currentDevice = {
-                        id: deviceInfo.id,
-                        code: deviceInfo.code,
-                        name: deviceInfo.name,
-                        ip: deviceInfo.ip,
-                        port: deviceInfo.port,
-                        brand: deviceInfo.brand,
-                        serialNumber: deviceInfo.serialNumber,
-                        type: deviceInfo.type,
-                        deviceType: deviceInfo.deviceType
-                    };
+                    payload.deviceCode = deviceInfo.code;
                 }
 
                 if (printerDevice) {
@@ -208,7 +227,8 @@ exports.login = async (req, res) => {
             userId: user.id,
             username: user.username,
             role: user.role,
-            shopId: user.shopId,
+            currentShop: shopCode,
+            deviceCode: deviceCode,
             ip: req.ip,
             tokenExpiresIn: config.jwt.expiresIn
         });
@@ -232,7 +252,7 @@ exports.profile = async (req, res) => {
         
         // Log profile access
         logger.logAuthEvent('profile_accessed', {
-            userId: user?.sub || user?.id,
+            userId: user?.id || user?.sub,
             username: user?.username,
             ip: req.ip,
             userAgent: req.get('User-Agent')
@@ -242,7 +262,7 @@ exports.profile = async (req, res) => {
     } catch (e) {
         logger.logError(e, {
             action: 'get_user_profile',
-            userId: req.user?.sub || req.user?.id,
+            userId: req.user?.id || req.user?.sub,
             ip: req.ip
         });
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Internal Server Error' });

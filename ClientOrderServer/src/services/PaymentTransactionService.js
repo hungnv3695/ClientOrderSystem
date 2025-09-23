@@ -26,19 +26,29 @@ async function savePaymentTransaction(data) {
     if (transferType === 'in') amountIn = transferAmount;
     else if (transferType === 'out') amountOut = transferAmount;
 
-    return await PaymentTransaction.create({
-        gateway,
-        transactionDate,
-        accountNumber,
-        subAccount,
-        amountIn,
-        amountOut,
-        accumulated,
-        code,
-        transactionContent,
-        referenceNumber,
-        body,
-    });
+    try {
+        return await PaymentTransaction.create({
+            gateway,
+            transactionDate,
+            accountNumber,
+            subAccount,
+            amountIn,
+            amountOut,
+            accumulated,
+            code,
+            transactionContent,
+            referenceNumber,
+            body,
+        });
+    } catch (error) {
+        // Handle unique constraint violation
+        if (error.name === 'SequelizeUniqueConstraintError' && referenceNumber) {
+            console.log(`Duplicate transaction detected for referenceNumber: ${referenceNumber}`);
+            // Trả về transaction đã tồn tại
+            return await PaymentTransaction.findOne({ where: { referenceNumber } });
+        }
+        throw error;
+    }
 }
 
 module.exports = { savePaymentTransaction };

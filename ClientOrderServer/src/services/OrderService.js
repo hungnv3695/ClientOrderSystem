@@ -40,13 +40,15 @@ async function createOrders(orderData) {
     const priceMap = new Map(foods.map(f => [f.id, f.price]));
     const totalPrice = (orderData.items || []).reduce((sum, i) => sum + (priceMap.get(i.foodId) || 0) * (i.quantity || 1), 0);
     const maxAttempts = 5;
+    const shopCode = orderData.shopCode;
+    const deviceCode = orderData.deviceCode
 
     // Thử tạo đơn hàng tối đa 5 lần nếu trùng mã
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const t = await sequelize.transaction();
         try {
             // Tự sinh số đơn hàng theo rule trong transaction
-            const orderNumber = await generateOrderNumber(t, orderData.shopCode, orderData.deviceCode);
+            const orderNumber = await generateOrderNumber(t, shopCode, deviceCode);
 
             // Tạo bản ghi Order chính
             const order = await Order.create({
@@ -55,6 +57,7 @@ async function createOrders(orderData) {
                 totalPrice,
                 status: ORDER_STATUS.RECEIVED,
                 paymentStatus: PAYMENT_STATUS.UNPAID,
+                shopCode: shopCode, // Thêm shopCode vào database
             }, { transaction: t });
 
             // Chuẩn bị các dòng bảng trung gian order_food
@@ -86,19 +89,27 @@ async function createOrders(orderData) {
 
 /**
  * Lấy danh sách đơn hàng trong ngày với các status chỉ định + foods dạng đơn giản [{id,name,quantity}]
+ * @param {string} shopCode - Mã cửa hàng để lọc orders (optional)
  */
-async function getOrdersByStatus() {
+async function getOrdersByStatus(shopCode = null) {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
+    const where = {
+        status: { [Op.in]: [ORDER_STATUS.RECEIVED, ORDER_STATUS.PROCESSING, ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED] },
+        paymentStatus: PAYMENT_STATUS.PAID, // Chỉ lấy đơn đã thanh toán
+        createdAt: { [Op.between]: [startOfDay, endOfDay] },
+    };
+
+    // Thêm filter theo shopCode nếu được cung cấp
+    if (shopCode) {
+        where.shopCode = shopCode;
+    }
+
     const orders = await Order.findAll({
-        where: {
-            status: { [Op.in]: [ORDER_STATUS.RECEIVED, ORDER_STATUS.PROCESSING, ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED] },
-            paymentStatus: PAYMENT_STATUS.PAID, // Chỉ lấy đơn đã thanh toán
-            createdAt: { [Op.between]: [startOfDay, endOfDay] },
-        },
+        where,
         include: [
             {
                 model: Food,
@@ -127,10 +138,11 @@ async function getOrdersByStatus() {
 /**
  * Lấy danh sách order numbers cho dashboard
  * Dùng getOrdersByStatus để lấy dữ liệu rồi rút gọn field theo định dạng cần thiết
+ * @param {string} shopCode - Mã cửa hàng để lọc orders (optional)
  * @returns {Promise<Array<{id:number, orderNumber:string, status:string}>>}
  */
-async function getOrderNumbersForDashboard() {
-    const orders = await getOrdersByStatus();
+async function getOrderNumbersForDashboard(shopCode = null) {
+    const orders = await getOrdersByStatus(shopCode);
     return orders;
 }
 
