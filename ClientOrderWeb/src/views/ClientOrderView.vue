@@ -66,8 +66,8 @@ import FoodCard from '../components/FoodCard.vue'
 import OrderList from '../components/OrderList.vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
-import { SHOP_CODE, buildQrImage } from '../config/appConfig.js'
-import { getCurrentDevice, getPrinterConfigFromDevice } from '../services/AuthService.js'
+import { buildQrImage } from '../config/appConfig.js'
+import { getCurrentDevice, getCurrentShop, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
 
 // Import print functions từ LocalPrintService
@@ -277,12 +277,27 @@ async function createOrder() {
     }
 
     try {
-        // Lấy device code từ current device (thiết bị đang dùng để order)
+        // Lấy shop code và device code từ user hiện tại
+        const shopCode = getCurrentShop()
         const currentDevice = getCurrentDevice()
+        
+        // Kiểm tra xem user có shop và device không
+        if (!shopCode) {
+            console.error('No shop code available for current user')
+            alert('Không thể tạo đơn hàng: Thiếu thông tin cửa hàng')
+            return
+        }
+        
+        if (!currentDevice || !currentDevice.code) {
+            console.error('No device code available for current user')
+            alert('Không thể tạo đơn hàng: Thiếu thông tin thiết bị')
+            return
+        }
+
         const deviceCode = currentDevice.code
 
         const orderParam = {
-            shopCode: SHOP_CODE,
+            shopCode: shopCode,
             deviceCode: deviceCode,
             note: 'No special requests',
             items: orderItems.value.map(item => ({

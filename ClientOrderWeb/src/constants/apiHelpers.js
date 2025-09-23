@@ -110,7 +110,10 @@ export const ordersApi = {
     getNumbers: () => apiGet(API_ENDPOINTS.ORDERS.GET_NUMBERS),
     create: (data) => apiPost(API_ENDPOINTS.ORDERS.CREATE, data),
     updateDetails: (orderId, data) => apiPatch(API_ENDPOINTS.ORDERS.UPDATE_DETAILS(orderId), data),
-    updateStatus: (orderId, status) => apiPatch(API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId), { status }),
+    updateStatus: (orderId, status) => {
+        const payload = { status }
+        return apiPatch(API_ENDPOINTS.ORDERS.UPDATE_STATUS(orderId), payload)
+    },
     getPaymentStatus: (orderId) => apiGet(API_ENDPOINTS.ORDERS.GET_PAYMENT_STATUS(orderId)),
     search: (params) => apiGet(API_ENDPOINTS.ORDERS.SEARCH, params),
 }
@@ -127,10 +130,13 @@ export const receiptsApi = {
 
 // Auth
 export const authApi = {
-    login: (username, password, deviceCode = null) => {
+    login: (username, password, deviceCode = null, shopCode = null) => {
         const requestData = { username, password }
         if (deviceCode) {
             requestData.deviceCode = deviceCode
+        }
+        if (shopCode) {
+            requestData.shopCode = shopCode
         }
         return apiPost(API_ENDPOINTS.AUTH.LOGIN, requestData)
     },

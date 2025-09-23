@@ -25,7 +25,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ordersApi } from '../constants/apiHelpers.js'
 import { io } from 'socket.io-client'
-import { SHOP_CODE, SOCKET_URL } from '../config/appConfig.js'
+import { SOCKET_URL } from '../config/appConfig.js'
+import { getCurrentShop } from '../services/AuthService.js'
 
 const orders = ref([])
 
@@ -39,7 +40,7 @@ onMounted(async () => {
     }
 
     // 2) Subscribe realtime qua socket
-    const socket = io(SOCKET_URL, { query: { shopId: SHOP_CODE } })
+    const socket = io(SOCKET_URL, { query: { shopId: getCurrentShop() } })
     socket.on('orders', (data) => {
         orders.value = data
     })

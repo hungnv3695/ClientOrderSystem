@@ -10,17 +10,21 @@ import { authApi } from '../constants/apiHelpers'
  * @param {string} username - Tên đăng nhập
  * @param {string} password - Mật khẩu
  * @param {string} deviceCode - Mã thiết bị (optional)
+ * @param {string} shopCode - Mã cửa hàng (optional)
  * @returns {Object} Thông tin user đã đăng nhập
  * @throws {Error} Nếu đăng nhập thất bại
  */
-export async function login(username, password, deviceCode = null) {
+export async function login(username, password, deviceCode = null, shopCode = null) {
     try {
         const requestBody = { username, password }
         if (deviceCode) {
             requestBody.deviceCode = deviceCode
         }
+        if (shopCode) {
+            requestBody.shopCode = shopCode
+        }
         
-        const response = await authApi.login(requestBody.username, requestBody.password, requestBody.deviceCode)
+        const response = await authApi.login(requestBody.username, requestBody.password, requestBody.deviceCode, requestBody.shopCode)
 
         // Debug log để kiểm tra response
         console.log('Login response:', { success: response?.success, data: response?.data })
@@ -86,18 +90,39 @@ export function getCurrentUser() {
 }
 
 /**
- * Lấy thông tin device hiện tại từ user
- * @returns {Object|null} Thông tin device hiện tại hoặc null nếu không có
+ * Lấy shop code hiện tại từ user
+ * @returns {string|null} Shop code hoặc null nếu không có
+ */
+export function getCurrentShop() {
+    try {
+        const user = getCurrentUser()
+        console.log('Current user:', user)
+        if (!user || !user.shopCode) {
+            return null
+        }
+        return user.shopCode
+    } catch (error) {
+        console.error('Error getting current shop code:', error)
+        return null
+    }
+}
+
+/**
+ * Lấy device code hiện tại từ user
+ * @returns {string|null} Device code hoặc null nếu không có
  */
 export function getCurrentDevice() {
     try {
         const user = getCurrentUser()
-        if (!user || !user.currentDevice) {
+        if (!user || !user.deviceCode) {
             return null
         }
-        return user.currentDevice
+        // Trả về object để compatible với code cũ
+        return {
+            code: user.deviceCode
+        }
     } catch (error) {
-        console.error('Error getting current device info:', error)
+        console.error('Error getting current device code:', error)
         return null
     }
 }

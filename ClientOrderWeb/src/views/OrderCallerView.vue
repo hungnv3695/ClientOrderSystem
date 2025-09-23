@@ -44,7 +44,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { io } from 'socket.io-client'
 import { ordersApi } from '../constants/apiHelpers.js'
-import { SHOP_CODE, SOCKET_URL } from '../config/appConfig.js'
+import { SOCKET_URL } from '../config/appConfig.js'
+import { getCurrentShop } from '../services/AuthService.js'
 import OrderNumberTag from '../components/OrderNumberTag.vue'
 import ProcessingOrderTag from '../components/ProcessingOrderTag.vue'
 import CompletedOrderTag from '../components/CompletedOrderTag.vue'
@@ -101,7 +102,7 @@ onMounted(async () => {
     }
 
     // 2) Subscribe realtime qua socket
-    const socket = io(SOCKET_URL, { query: { shopId: SHOP_CODE } })
+    const socket = io(SOCKET_URL, { query: { shopId: getCurrentShop() } })
     socket.on('orders', (data) => {
         orders.value = data
         console.log('Received orders:', data) // Debugging line
