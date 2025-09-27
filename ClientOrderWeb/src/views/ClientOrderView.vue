@@ -34,8 +34,8 @@
                         <i class="bi bi-arrow-left"></i>
                     </BButton>
                     <div class="header-title-section">
-                        <h1 class="order-title-modern m-0">THỰC ĐƠN</h1>
-                        <p class="order-subtitle-modern m-0">Chọn món yêu thích của bạn</p>
+                        <h1 class="order-title-modern m-0">MENU</h1>
+                        <p class="order-subtitle-modern m-0">Kính chào quý khách! Vui lòng chọn món bên dưới</p>
                     </div>
                 </BCol>
             </BRow>

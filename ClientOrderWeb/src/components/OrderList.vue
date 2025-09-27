@@ -16,16 +16,16 @@
           <tr v-for="(item, idx) in orderItems" :key="item.id">
             <td class="food-td col-6">{{ item.name }}</td>
             <td class="food-td text-center col-3">
-              <BButton size="sm"  class="me-1 px-2 py-0 btn-nature" @click="$emit('decrease', item)">-</BButton>
+              <BButton size="sm"  class="me-1 px-2 py-0 btn-nature qty-btn" @click="$emit('decrease', item)">-</BButton>
               <span class="mx-1 qty-value">{{ item.quantity }}</span>
-              <BButton size="sm" class="ms-1 px-2 py-0 btn-nature" @click="$emit('increase', item)">+</BButton>
+              <BButton size="sm" class="ms-1 px-2 py-0 btn-nature qty-btn" @click="$emit('increase', item)">+</BButton>
             </td>
             <td class="food-td price-td text-end col-3">{{ formatCurrencyVND(item.price * item.quantity) }}</td>
           </tr>
         </tbody>
       </table>
       <div class="d-flex justify-content-between fw-bold pt-2 mb-3">
-        <h5 class="text-black">Tổng cộng</h5>
+        <h5 class="text-black">Tổng tiền</h5>
         <h5 class="text-black">{{ formatCurrencyVND(totalAmount) }}</h5>
       </div>
       <BButton class="w-100 pay-btn" @click="$emit('checkout')">Thanh toán</BButton>
@@ -52,10 +52,16 @@ const totalAmount = computed(() =>
 <style scoped>
 td.food-td {
     background: var(--nature-green-light);
+    font-size: 16px;
 }
 
 th.food-th {
     background: var(--nature-green-soft);
+    font-size: 16px;
+}
+
+.qty-btn {
+    font-size: 16px !important;
 }
 
 .qty-value {
@@ -63,12 +69,13 @@ th.food-th {
     min-width: 24px;
     text-align: center;
     font-variant-numeric: tabular-nums;
+    font-size: 16px;
 }
 
 .pay-btn {
   padding-top: 0.75rem;  /* gấp đôi mặc định .btn (0.375rem) */
   padding-bottom: 0.75rem;
-  font-size: 1.2rem; /* tăng kích thước chữ */
+  font-size: 20px; /* 20px theo yêu cầu */
   font-weight: 600; /* đậm chữ */
   background-color: var(--success-green);
   border-color: var(--success-green);
