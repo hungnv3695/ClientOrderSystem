@@ -7,7 +7,7 @@
  */
 
 import { PRINT_SERVICE_URL } from '../config/appConfig.js'
-
+import { API_METHODS } from '../constants/apiEndpoints.js'
 // ===== CONSTANTS =====
 
 /** Timeout mặc định cho print operations - giảm xuống để tránh browser timeout */
@@ -15,7 +15,8 @@ const DEFAULT_TIMEOUT = 15000
 
 /** Print service endpoints */
 const PRINT_ENDPOINTS = {
-    RECEIPT: '/api/print/receipt'
+    RECEIPT: '/receipt',
+    HEALTH: '/health'
 }
 
 // ===== HELPER FUNCTIONS =====
@@ -111,9 +112,9 @@ async function safeFetch(url, options = {}, timeout = DEFAULT_TIMEOUT) {
 export async function checkPrintServiceHealth() {
     try {
         // Health endpoint nằm ở root, không phải /api/print/health
-        const baseUrl = PRINT_SERVICE_URL.replace('/api/print', ''); // Remove /api/print suffix
-        const response = await fetch(`${baseUrl}/health`, {
-            method: 'GET',
+        const url = PRINT_SERVICE_URL.replace('/api/print', '') + PRINT_ENDPOINTS.HEALTH; // Remove /api/print suffix
+        const response = await fetch(url, {
+            method: API_METHODS.GET,
             signal: AbortSignal.timeout(3000)
         })
         
@@ -167,11 +168,11 @@ export async function printReceipt(printerIp, port = '', deviceId = 'local_print
         }
 
         console.log('Sending print request:', requestBody)
-        const url = buildPrintServiceUrl(PRINT_ENDPOINTS.RECEIPT)
+        const url = PRINT_SERVICE_URL + PRINT_ENDPOINTS.RECEIPT
         console.log('Print service URL:', url)
         
         const result = await safeFetch(url, {
-            method: 'POST',
+            method: API_METHODS.POST,
             body: JSON.stringify(requestBody)
         })
 
@@ -222,44 +223,15 @@ export function createReceiptData(receiptResponse) {
     }
 
     const formattedData = {
-        receiptNumber: receiptNumber || `HD${receiptId}`,
+        receiptNumber: receiptNumber,
         items: Array.isArray(items) ? items : [],
         totalAmount: parseFloat(totalAmount) || 0,
         discountAmount: parseFloat(discountAmount) || 0,
         finalAmount: parseFloat(finalAmount) || parseFloat(totalAmount) || 0,
-        paymentMethod: paymentMethod || 'bank_transfer',
+        paymentMethod: paymentMethod || 'N/A',
         paidAt: paidAt || created_at || new Date().toISOString()
     }
 
     console.log('Created receipt data:', formattedData)
     return formattedData
-}
-
-/**
- * Wrapper function giữ nguyên interface như PrinterService.js cũ
- * Để dễ dàng thay thế trong code hiện tại (Legacy support)
- * @param {string} ip - Printer IP
- * @param {string} port - Printer port
- * @param {string} deviceId - Device ID
- * @param {Object} receipt - Receipt data
- * @returns {Promise<Object>} Print result
- */
-export function printReceiptLegacy(ip, port, deviceId, receipt) {
-    try {
-        // Convert receipt format nếu cần
-        const receiptData = createReceiptData(receipt)
-        
-        return printReceipt(ip, port, deviceId, receiptData)
-    } catch (error) {
-        console.error('Print receipt legacy error:', error)
-        return Promise.reject(error)
-    }
-}
-
-// ===== DEFAULT EXPORT =====
-export default {
-    checkPrintServiceHealth,
-    printReceipt,
-    printReceiptLegacy,
-    createReceiptData
 }

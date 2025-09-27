@@ -152,7 +152,6 @@ export function getPrinterConfigFromDevice() {
     try {
         const printerDevice = getPrinterDevice()
         if (printerDevice && printerDevice.type === 'PRT' && printerDevice.ip) {
-            console.log('Using printer config from device info:', printerDevice)
             return {
                 printerIp: printerDevice.ip,
                 port: printerDevice.port || '80', // Default HTTP port cho Epson
