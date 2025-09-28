@@ -7,6 +7,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import ClientOrderView from '../views/ClientOrderView.vue';
 import OrderDashboardView from '../views/OrderDashboardView.vue';
 import OrderCallerView from '../views/OrderCallerView.vue';
+import StaffScreenView from '../views/StaffScreenView.vue';
 import OrderListView from '../views/manager/OrderListView.vue';
 import CompanyManagementView from '../views/manager/CompanyManagementView.vue';
 import ShopManagementView from '../views/manager/ShopManagementView.vue';
@@ -21,6 +22,14 @@ const LoginView = () => import('../views/LoginView.vue')
 const routes = [
     // Trang đăng nhập (public, không yêu cầu token)
     { path: '/login', name: 'Login', component: LoginView },
+
+    // Màn hình nhân viên: hiển thị danh sách chức năng cho staff
+    {
+        path: '/StaffScreen',
+        name: 'StaffScreen',
+        component: StaffScreenView,
+        meta: { roles: ['staff'] }
+    },
 
     // Màn hình gọi món tại quầy: yêu cầu nhân viên/ quản lý
     {

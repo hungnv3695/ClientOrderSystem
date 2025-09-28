@@ -73,16 +73,11 @@ const screenConfig = {
         allowedRoles: ['device'],
         name: 'Đặt món'
     },
-    'OrderCaller': {
-        path: '/OrderCaller',
-        allowedRoles: ['staff'],
-        name: 'Điều phối đơn hàng'
-    },
-    'OrderDashboard': {
-        path: '/OrderDashboard',
+    'StaffScreen': {
+        path: '/StaffScreen',
         allowedRoles: ['staff'], 
-        name: 'Trạng thái đơn hàng'
-    }
+        name: 'Màn hình chức năng nhân viên'
+    },
 }
 
 // Lấy deviceCode, shopCode từ URL param và lưu vào localStorage; target chỉ lấy từ URL
