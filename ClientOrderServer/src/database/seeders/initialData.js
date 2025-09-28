@@ -139,7 +139,10 @@ async function seedInitialData(models) {
                     phone: '7085214356',
                     email: 'hung.dev95@gmail.com',
                     managerId: null, // Có thể set manager sau
-                    status: 'active'
+                    status: 'active',
+                    bankCode: 'VCB',
+                    bankNumber: '0011004365510',
+                    bankNumberName: 'NGUYEN VIET HUNG'
                 }
             });
 

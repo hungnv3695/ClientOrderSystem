@@ -42,6 +42,21 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             defaultValue: 'active',
         },
+        bankCode: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+            field: 'bank_code',
+        },
+        bankNumber: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+            field: 'bank_number',
+        },
+        bankNumberName: {
+            type: DataTypes.STRING(60),
+            allowNull: true,
+            field: 'bank_number_name',
+        },
     }, {
         tableName: 'shop',
         timestamps: true,
@@ -53,6 +68,8 @@ module.exports = (sequelize, DataTypes) => {
             { fields: ['manager_id'] },
             { fields: ['code'], unique: true },
             { fields: ['name'] },
+            { fields: ['bank_code'] },
+            { fields: ['bank_number'] },
         ],
     });
 

@@ -66,8 +66,8 @@ import FoodCard from '../components/FoodCard.vue'
 import OrderList from '../components/OrderList.vue'
 import PaymentModal from '../components/PaymentModal.vue'
 import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
-import { buildQrImage } from '../config/appConfig.js'
-import { getCurrentDevice, getCurrentShop, getPrinterConfigFromDevice } from '../services/AuthService.js'
+import { qrCompact2 } from '../utils/qrUtils.js'
+import { getCurrentDevice, getCurrentShop, getCurrentUser, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
 import { API_STATUS_CODES, STRING } from '../constants/app.constants.js'
 import { CLIENT_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
@@ -273,7 +273,7 @@ function decreaseQuantity(item) {
  * Sau khi thành công sẽ mở modal thanh toán
  */
 async function createOrder() {
-    if (!orderItems.value.length) return
+    if (!orderItems.value.length) { return }
 
     // Check authentication trước khi gọi API
     if (!isAuthenticated()) {
@@ -326,7 +326,12 @@ async function createOrder() {
             // Mở payment modal
             orderNumber = result.orderNumber
             if (result.id) orderId = result.id
-            qrImage = buildQrImage(result.totalPrice, result.orderNumber)
+            var user = getCurrentUser()
+            qrImage = qrCompact2(result.totalPrice, 
+                                    result.orderNumber, 
+                                    user.bankCode, 
+                                    user.bankNumber, 
+                                    user.bankNumberName)
             showPayment.value = true
         }
         

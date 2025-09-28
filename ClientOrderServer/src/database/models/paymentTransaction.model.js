@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     const PaymentTransaction = sequelize.define('PaymentTransaction', {
         id: {
             type: DataTypes.INTEGER,
-            autoIncrement: true,
+            autoIncrement: false,
             primaryKey: true,
         },
         gateway: {

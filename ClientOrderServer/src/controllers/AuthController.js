@@ -139,6 +139,8 @@ exports.login = async (req, res) => {
                 });
             }
         }
+        
+        const shop = await Shop.findOne({ where: { code: shopCode, status: 'active' } });
 
         // Success - create token
         const payload = {
@@ -147,7 +149,10 @@ exports.login = async (req, res) => {
             role: user.role,
             code: user.code,
             email: user.email,
-            shopCode: shopCode
+            shopCode: shopCode,
+            bankCode: shop?.bankCode || null,
+            bankNumber: shop?.bankNumber || null,
+            bankNumberName: shop?.bankNumberName || null
         };
 
         // Lấy thông tin devices của user (bao gồm device hiện tại và máy in)
