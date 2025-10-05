@@ -95,49 +95,47 @@ exports.login = async (req, res) => {
         }
 
         // Nếu có deviceCode, kiểm tra user có quyền sử dụng device này không
-        if (user.role === USER_ROLES.DEVICE) {
-            if (!deviceCode) {
-                    logger.logAuthEvent('login_failed', {
-                    username,
-                    deviceCode,
-                    shopCode,
-                    userId: user.id,
-                    reason: 'device_not_existed',
-                    ip: req.ip
-                });
-                return res.status(HTTP_STATUS.FORBIDDEN).json({ 
-                    success: false, 
-                    message: 'Thiết bị không tồn tại' 
-                });
-            }
-
-            const userDevice = await Device.findOne({
-                where: { 
-                    code: deviceCode,
-                    userId: user.id,
-                    status: 'used'
-                },
-                include: [{
-                    model: DeviceType,
-                    as: 'deviceType',
-                    required: true
-                }]
-            });
-
-            if (!userDevice) {
+        if (!deviceCode) {
                 logger.logAuthEvent('login_failed', {
-                    username,
-                    deviceCode,
-                    shopCode,
-                    userId: user.id,
-                    reason: 'device_not_authorized',
-                    ip: req.ip
-                });
-                return res.status(HTTP_STATUS.FORBIDDEN).json({ 
-                    success: false, 
-                    message: 'User không có quyền sử dụng thiết bị này' 
-                });
-            }
+                username,
+                deviceCode,
+                shopCode,
+                userId: user.id,
+                reason: 'device_not_existed',
+                ip: req.ip
+            });
+            return res.status(HTTP_STATUS.FORBIDDEN).json({ 
+                success: false, 
+                message: 'Thiết bị không tồn tại' 
+            });
+        }
+
+        const userDevice = await Device.findOne({
+            where: { 
+                code: deviceCode,
+                userId: user.id,
+                status: 'used'
+            },
+            include: [{
+                model: DeviceType,
+                as: 'deviceType',
+                required: true
+            }]
+        });
+
+        if (!userDevice) {
+            logger.logAuthEvent('login_failed', {
+                username,
+                deviceCode,
+                shopCode,
+                userId: user.id,
+                reason: 'device_not_authorized',
+                ip: req.ip
+            });
+            return res.status(HTTP_STATUS.FORBIDDEN).json({ 
+                success: false, 
+                message: 'User không có quyền sử dụng thiết bị này' 
+            });
         }
         
         const shop = await Shop.findOne({ where: { code: shopCode, status: 'active' } });
@@ -159,72 +157,51 @@ exports.login = async (req, res) => {
         let deviceInfo = null;
         let printerDevice = null;
         
-        if (user.role === USER_ROLES.DEVICE) {
-            try {
-                // Lấy tất cả devices của user
-                const userDevices = await Device.findAll({
-                    where: { 
-                        userId: user.id,
-                        status: 'used'
-                    },
-                    include: [{
-                        model: DeviceType,
-                        as: 'deviceType',
-                        required: true
-                    }]
-                });
+        // Lấy tất cả devices của user
+        const userDevices = await Device.findAll({
+            where: { 
+                userId: user.id,
+                status: 'used'
+            },
+            include: [{
+                model: DeviceType,
+                as: 'deviceType',
+                required: true
+            }]
+        });
 
-                // Tìm device hiện tại (nếu có deviceCode)
-                if (deviceCode) {
-                    deviceInfo = userDevices.find(d => d.code === deviceCode);
-                }
-
-                // Tìm máy in (type PRT)
-                printerDevice = userDevices.find(d => d.type === 'PRT');
-
-                // Nếu không có deviceCode cụ thể, dùng device đầu tiên
-                if (!deviceInfo && userDevices.length > 0) {
-                    deviceInfo = userDevices[0];
-                }
-
-                if (deviceInfo) {
-                    payload.deviceCode = deviceInfo.code;
-                }
-
-                if (printerDevice) {
-                    payload.printerDevice = {
-                        id: printerDevice.id,
-                        code: printerDevice.code,
-                        name: printerDevice.name,
-                        ip: printerDevice.ip,
-                        port: printerDevice.port,
-                        brand: printerDevice.brand,
-                        serialNumber: printerDevice.serialNumber,
-                        type: printerDevice.type,
-                        deviceType: printerDevice.deviceType
-                    };
-                }
-                
-                logger.logAuthEvent('device_login_success', {
-                    userId: user.id,
-                    username: user.username,
-                    currentDeviceCode: deviceInfo?.code,
-                    printerDeviceCode: printerDevice?.code,
-                    requestedDeviceCode: deviceCode,
-                    ip: req.ip
-                });
-            } catch (deviceError) {
-                logger.logError(deviceError, {
-                    action: 'get_device_info',
-                    userId: user.id,
-                    username: user.username,
-                    deviceCode,
-                    ip: req.ip
-                });
-                // Không fail login nếu không lấy được device info
-            }
+        // Tìm device hiện tại (nếu có deviceCode)
+        if (deviceCode) {
+            deviceInfo = userDevices.find(d => d.code === deviceCode);
         }
 
+        // Tìm máy in (type PRT)
+        printerDevice = userDevices.find(d => d.type === 'PRT');
+
+        // Nếu không có deviceCode cụ thể, dùng device đầu tiên
+        if (!deviceInfo && userDevices.length > 0) {
+            deviceInfo = userDevices[0];
+        }
+
+        if (deviceInfo) {
+            payload.deviceCode = deviceInfo.code;
+        }
+
+        if (printerDevice) {
+            payload.printerDevice = {
+                id: printerDevice.id,
+                code: printerDevice.code,
+                name: printerDevice.name,
+                ip: printerDevice.ip,
+                port: printerDevice.port,
+                brand: printerDevice.brand,
+                serialNumber: printerDevice.serialNumber,
+                type: printerDevice.type,
+                deviceType: printerDevice.deviceType
+            };
+        }
+
+        // kiểm tra token còn hạn không
         const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
 
         // Log successful login

@@ -31,17 +31,6 @@ exports.getOrderNumbers = async (req, res) => {
 
 exports.createOrder = async (req, res) => {
     const orderData = req.body;
-    
-    // Log order creation attempt
-    logger.logOrderEvent('order_creation_attempt', {
-        hasOrderData: !!orderData,
-        itemsCount: orderData?.items?.length || 0,
-        tableNumber: orderData?.tableNumber,
-        customerPhone: orderData?.customerPhone,
-        totalAmount: orderData?.totalAmount,
-        ip: req.ip,
-        userAgent: req.get('User-Agent')
-    });
 
     try {
         if (!orderData || !Array.isArray(orderData.items) || orderData.items.length === 0) {
@@ -54,6 +43,7 @@ exports.createOrder = async (req, res) => {
         }
 
         const newOrder = await createOrders(orderData);
+
         if (!newOrder) {
             logger.logOrderEvent('order_creation_failed', {
                 reason: 'service_returned_null',
@@ -67,10 +57,6 @@ exports.createOrder = async (req, res) => {
         logger.logOrderEvent('order_created', {
             orderId: newOrder.id,
             orderNumber: newOrder.orderNumber,
-            tableNumber: newOrder.tableNumber,
-            itemsCount: newOrder.items?.length || 0,
-            totalAmount: newOrder.totalAmount,
-            customerPhone: newOrder.customerPhone,
             ip: req.ip
         });
 

@@ -14,7 +14,13 @@ const PAYMENT_STATUS = Object.freeze({
     REFUNDED: 'Refunded', // Đã hoàn tiền
 });
 
+const PAYMENT_METHOD = Object.freeze({
+    CASH: 'cash', // Tiền mặt
+    BANK_TRANSFER: 'bank_transfer', // Chuyển khoản ngân hàng
+});
+
 module.exports = {
     ORDER_STATUS,
     PAYMENT_STATUS,
+    PAYMENT_METHOD,
 };

@@ -1,7 +1,7 @@
 const { Order, OrderFood, Food, sequelize } = require('../database');
 const { Op } = require('sequelize');
-const { ORDER_STATUS, PAYMENT_STATUS } = require('../constants/order.constants');
-
+const { ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHOD } = require('../constants/order.constants');
+    
 // Order: model đơn hàng
 // OrderFood: bảng trung gian order - food (nhiều-nhiều) có thêm quantity, unitPrice
 // Food: model món ăn
@@ -42,6 +42,10 @@ async function createOrders(orderData) {
     const maxAttempts = 5;
     const shopCode = orderData.shopCode;
     const deviceCode = orderData.deviceCode
+    // Kiểm tra paymentStatus
+    const paymentStatus = orderData.paymentStatus || PAYMENT_STATUS.UNPAID;
+    // Kiểm tra paymentMethod
+    const paymentMethod = orderData.paymentMethod || PAYMENT_METHOD.CASH;
 
     // Thử tạo đơn hàng tối đa 5 lần nếu trùng mã
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -56,7 +60,8 @@ async function createOrders(orderData) {
                 note: orderData.note || null,
                 totalPrice,
                 status: ORDER_STATUS.RECEIVED,
-                paymentStatus: PAYMENT_STATUS.UNPAID,
+                paymentStatus: paymentStatus,
+                paymentMethod: paymentMethod,
                 shopCode: shopCode, // Thêm shopCode vào database
             }, { transaction: t });
 
