@@ -63,6 +63,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCurrentShop } from '../services/AuthService.js'
 import FunctionScreenButton from '../components/FunctionScreenButton.vue'
+import { SCREEN } from '../constants/app.constants.js'
 
 const router = useRouter()
 const currentShopCode = ref(null)
@@ -77,7 +78,7 @@ onMounted(() => {
 const navigateToOrderDashboard = () => {
   if (currentShopCode.value) {
     router.push({
-      name: 'OrderDashboard',
+      name: SCREEN.ORDER_DASHBOARD.NAME,
       query: { shopCode: currentShopCode.value }
     })
   } else {
@@ -90,7 +91,7 @@ const navigateToOrderDashboard = () => {
 const navigateToOrderCaller = () => {
   if (currentShopCode.value) {
     router.push({
-      name: 'OrderCaller',
+      name: SCREEN.ORDER_CALLER.NAME,
       query: { shopCode: currentShopCode.value }
     })
   } else {
@@ -99,16 +100,13 @@ const navigateToOrderCaller = () => {
   }
 }
 
-// Sự kiện 3: Navigate to StaffOrder (URL để trống, sẽ điền sau)
+// Sự kiện 3: Navigate to StaffOrder
 const navigateToStaffOrder = () => {
   if (currentShopCode.value) {
-    // TODO: Thêm navigation URL sau khi tạo StaffOrderView
-    // router.push({
-    //   name: 'StaffOrder', 
-    //   query: { shopCode: currentShopCode.value }
-    // })
-    console.log('Navigate to StaffOrder with shopCode:', currentShopCode.value)
-    alert('URL navigation sẽ được thêm sau')
+    router.push({
+      name: SCREEN.STAFF_ORDER.NAME,
+      query: { shopCode: currentShopCode.value }
+    })
   } else {
     console.error('No shopCode available for navigation')
     alert('Không thể xác định cửa hàng. Vui lòng đăng nhập lại.')

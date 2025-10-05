@@ -28,7 +28,7 @@
         <h5 class="text-black">Tổng tiền</h5>
         <h5 class="text-black">{{ formatCurrencyVND(totalAmount) }}</h5>
       </div>
-      <BButton class="w-100 pay-btn" @click="$emit('checkout')">Thanh toán</BButton>
+      <BButton :class="['w-100', buttonClass]" @click="$emit('checkout')">{{ buttonText }}</BButton>
     </div>
   </div>
 </template>
@@ -41,6 +41,15 @@ const props = defineProps({
   orderItems: {
     type: Array,
     required: true
+  },
+  // Props để customize button text và style
+  buttonText: {
+    type: String,
+    default: 'Thanh toán'
+  },
+  buttonClass: {
+    type: String,
+    default: 'pay-btn'
   }
 })
 
@@ -50,6 +59,19 @@ const totalAmount = computed(() =>
 </script>
 
 <style scoped>
+:root {
+  --nature-green: #8FA374;
+  --nature-green-light: #A4B88D;
+  --nature-green-soft: #B8C9A6;
+  --nature-green-dark: #6C7A53;
+  --earth-brown: #8B7355;
+  --earth-brown-light: #A68B6B;
+  --earth-brown-dark: #6B5D48;
+  --warm-beige: #F5F1E8;
+  --success-green: #198754;
+  --natural-shadow: rgba(107, 93, 72, 0.15);
+}
+
 td.food-td {
     background: var(--nature-green-light);
     font-size: 16px;
@@ -85,6 +107,24 @@ th.food-th {
 .pay-btn:hover {
   background-color: #157347; /* success hover mặc định của Bootstrap */
   border-color: #146c43;
+  color: #fff;
+}
+
+/* Confirm button cho StaffOrderView */
+.confirm-btn {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  font-size: 20px;
+  font-weight: 600;
+  background-color: var(--earth-brown);
+  border-color: var(--earth-brown);
+  color: #fff;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.confirm-btn:hover {
+  background-color: var(--earth-brown-dark);
+  border-color: var(--earth-brown-dark);
   color: #fff;
 }
 </style>

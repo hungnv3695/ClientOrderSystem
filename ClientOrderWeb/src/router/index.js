@@ -8,6 +8,7 @@ import ClientOrderView from '../views/ClientOrderView.vue';
 import OrderDashboardView from '../views/OrderDashboardView.vue';
 import OrderCallerView from '../views/OrderCallerView.vue';
 import StaffScreenView from '../views/StaffScreenView.vue';
+import StaffOrderView from '../views/StaffOrderView.vue';
 import OrderListView from '../views/manager/OrderListView.vue';
 import CompanyManagementView from '../views/manager/CompanyManagementView.vue';
 import ShopManagementView from '../views/manager/ShopManagementView.vue';
@@ -51,6 +52,13 @@ const routes = [
         path: '/OrderCaller',
         name: 'OrderCaller',
         component: OrderCallerView,
+        meta: { roles: ['staff', 'manager'] }
+    },
+    // Màn hình đặt món cho nhân viên: yêu cầu nhân viên/ quản lý
+    {
+        path: '/StaffOrder',
+        name: 'StaffOrder',
+        component: StaffOrderView,
         meta: { roles: ['staff', 'manager'] }
     },
     // Danh sách đơn hàng (quản lý): chỉ cho phép quản lý truy cập
