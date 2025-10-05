@@ -64,6 +64,7 @@ import { useRouter } from 'vue-router'
 import { getCurrentShop } from '../services/AuthService.js'
 import FunctionScreenButton from '../components/FunctionScreenButton.vue'
 import { SCREEN } from '../constants/app.constants.js'
+import { STAFF_SCREEN_ALERT_MESS } from '../constants/msg.constants.js'
 
 const router = useRouter()
 const currentShopCode = ref(null)
@@ -82,8 +83,7 @@ const navigateToOrderDashboard = () => {
       query: { shopCode: currentShopCode.value }
     })
   } else {
-    console.error('No shopCode available for navigation')
-    alert('Không thể xác định cửa hàng. Vui lòng đăng nhập lại.')
+    alert(STAFF_SCREEN_ALERT_MESS.SHOP_CODE_NOT_FOUND)
   }
 }
 
@@ -95,8 +95,7 @@ const navigateToOrderCaller = () => {
       query: { shopCode: currentShopCode.value }
     })
   } else {
-    console.error('No shopCode available for navigation')
-    alert('Không thể xác định cửa hàng. Vui lòng đăng nhập lại.')
+    alert(STAFF_SCREEN_ALERT_MESS.SHOP_CODE_NOT_FOUND)
   }
 }
 
@@ -108,8 +107,7 @@ const navigateToStaffOrder = () => {
       query: { shopCode: currentShopCode.value }
     })
   } else {
-    console.error('No shopCode available for navigation')
-    alert('Không thể xác định cửa hàng. Vui lòng đăng nhập lại.')
+    alert(STAFF_SCREEN_ALERT_MESS.SHOP_CODE_NOT_FOUND)
   }
 }
 </script>

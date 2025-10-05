@@ -4,6 +4,18 @@
  * Application Constants for Frontend
  */
 
+// Payment Methods
+export const PAYMENT_METHOD = {
+    CASH: 'cash',
+    BANK_TRANSFER: 'bank_transfer'
+};
+
+// Payment Status
+export const PAYMENT_STATUS = {
+    PAID: 'Paid',
+    UNPAID: 'Unpaid'
+};
+
 // API Status Codes
 export const API_STATUS_CODES = {
     OK: 200,
@@ -52,3 +64,38 @@ export const getStatusBadgeClass = (status) => {
 export const STRING = {
     EMPTY: '',
 };
+
+export const USER_ROLE = {
+    STAFF: 'staff',
+    DEVICE: 'device'
+};
+
+export const ORDER_STATUS = {
+    RECEIVED: 'Received',
+    PROCESSING: 'Processing',
+    COMPLETED: 'Completed',
+    DELIVERED: 'Delivered',
+};
+
+export const SCREEN = {
+    STAFF_ORDER : {
+        NAME: 'StaffOrder',
+        URL: '/StaffOrder'
+    },
+    STAFF_SCREEN : {
+        NAME: 'StaffScreen',
+        URL: '/StaffScreen'
+    },
+    CLIENT_ORDER : {
+        NAME: 'ClientOrder',
+        URL: '/ClientOrder'
+    },
+    ORDER_CALLER : {
+        NAME: 'OrderCaller',
+        URL: '/OrderCaller'
+    },
+    ORDER_DASHBOARD : {
+        NAME: 'OrderDashboard',
+        URL: '/OrderDashboard'
+    },
+}

@@ -69,7 +69,7 @@ import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../s
 import { qrCompact2 } from '../utils/qrUtils.js'
 import { getCurrentDevice, getCurrentShop, getCurrentUser, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
-import { API_STATUS_CODES, STRING } from '../constants/app.constants.js'
+import { API_STATUS_CODES, STRING, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/app.constants.js'
 import { CLIENT_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
 
 // Import print functions từ LocalPrintService
@@ -96,9 +96,6 @@ const isWelcome = ref(true)
 
 /** URL đường dẫn trang đăng nhập */
 const URL_LOGIN = '/login'
-
-/** Phương thức thanh toán chuyển khoản ngân hàng */
-const BANK_TRANSFER = 'bank_transfer'
 
 /** Tên sự kiện touchstart cho thiết bị cảm ứng */
 const TOUCH_START_EVENT = 'touchstart'
@@ -304,6 +301,8 @@ async function createOrder() {
         const orderParam = {
             shopCode: shopCode,
             deviceCode: deviceCode,
+            paymentMethod: PAYMENT_METHOD.BANK_TRANSFER,
+            paymentStatus: PAYMENT_STATUS.UNPAID,
             note: 'No special requests',
             items: orderItems.value.map(item => ({
                 name: item.name,
@@ -355,7 +354,7 @@ async function createOrder() {
 async function handlePaid() {
     try {
         const receipt = await createReceipt(orderId, {
-            paymentMethod: BANK_TRANSFER,
+            paymentMethod: PAYMENT_METHOD.BANK_TRANSFER,
         })
         
         // In hóa đơn nếu có máy in thông qua local service - không block payment

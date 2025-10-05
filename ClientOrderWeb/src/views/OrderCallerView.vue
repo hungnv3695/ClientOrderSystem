@@ -45,6 +45,7 @@ import { ref, computed, onMounted } from 'vue'
 import { io } from 'socket.io-client'
 import { ordersApi } from '../constants/apiHelpers.js'
 import { SOCKET_URL } from '../config/appConfig.js'
+import { ORDER_STATUS } from '../constants/app.constants.js'
 import { getCurrentShop } from '../services/AuthService.js'
 import OrderNumberTag from '../components/OrderNumberTag.vue'
 import ProcessingOrderTag from '../components/ProcessingOrderTag.vue'
@@ -61,13 +62,13 @@ const orders = ref([])
  * Danh sách đơn hàng đã nhận (status = 'Received')
  * Hiển thị ở cột đầu tiên, có thể click để chuyển sang Processing
  */
-const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received'))
+const receivedOrders = computed(() => orders.value.filter(o => o.status === ORDER_STATUS.RECEIVED))
 
 /** 
  * Danh sách đơn hàng đang thực hiện (status = 'Processing')
  * Hiển thị ở cột thứ hai với chi tiết món ăn và 2 nút action
  */
-const processingOrders = computed(() => orders.value.filter(o => o.status === 'Processing'))
+const processingOrders = computed(() => orders.value.filter(o => o.status ===  ORDER_STATUS.PROCESSING))
 
 /** 
  * Danh sách đơn hàng đã hoàn thành (status = 'Completed')
@@ -75,7 +76,7 @@ const processingOrders = computed(() => orders.value.filter(o => o.status === 'P
  */
 const completedOrders = computed(() =>
     orders.value
-        .filter(o => o.status === 'Completed')
+        .filter(o => o.status === ORDER_STATUS.COMPLETED)
         .sort((a, b) => b.orderNumber.localeCompare(a.orderNumber))
 )
 
@@ -83,7 +84,7 @@ const completedOrders = computed(() =>
  * Danh sách đơn hàng đã giao (status = 'Delivered')
  * Hiển thị ở cột cuối cùng, có thể click để chuyển về Completed
  */
-const deliveredOrders = computed(() => orders.value.filter(o => o.status === 'Delivered'))
+const deliveredOrders = computed(() => orders.value.filter(o => o.status === ORDER_STATUS.DELIVERED))
 
 // ===== LIFECYCLE HOOKS =====
 

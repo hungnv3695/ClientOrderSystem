@@ -55,6 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { login, logout } from '../services/AuthService.js'
+import { SCREEN, USER_ROLE } from '../constants/app.constants.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -68,14 +69,14 @@ const targetScreen = ref('')
 
 // Định nghĩa cấu hình cho từng màn hình
 const screenConfig = {
-    'ClientOrder': {
-        path: '/ClientOrder',
-        allowedRoles: ['device'],
+    [SCREEN.CLIENT_ORDER.NAME]: {
+        path: SCREEN.CLIENT_ORDER.URL,
+        allowedRoles: [USER_ROLE.DEVICE],
         name: 'Đặt món'
     },
-    'StaffScreen': {
-        path: '/StaffScreen',
-        allowedRoles: ['staff'], 
+    [SCREEN.STAFF_SCREEN.NAME]: {
+        path: SCREEN.STAFF_SCREEN.URL,
+        allowedRoles: [USER_ROLE.STAFF], 
         name: 'Màn hình chức năng nhân viên'
     },
 }
@@ -86,27 +87,23 @@ onMounted(() => {
     const urlShopCode = route.query.shopCode
     const urlTarget = route.query.target
     
+    // Lấy deviceCode từ URL
     if (urlDeviceCode) {
         deviceCode.value = urlDeviceCode
         console.log('Device code from URL:', urlDeviceCode)
     } 
     
+    // Lấy shopCode từ URL
     if (urlShopCode) {
         shopCode.value = urlShopCode
         console.log('Shop code from URL:', urlShopCode)
-    } 
+    }
     
+    // Lấy screen target từ URL
     if (urlTarget) {
         targetScreen.value = urlTarget
         console.log('Target screen from URL:', urlTarget)
     }
-    
-    // Log trạng thái để debug
-    console.log('URL validation status:', {
-        shopCode: !!shopCode.value,
-        deviceCode: !!deviceCode.value, 
-        targetScreen: !!targetScreen.value
-    })
 })
 
 async function onSubmit() {
@@ -140,7 +137,6 @@ async function onSubmit() {
         // Kiểm tra quyền truy cập
         if (config.allowedRoles.includes(userRole)) {
             const redirectPath = config.path
-            console.log('Access granted. Redirecting to:', redirectPath)
             await router.push(redirectPath)
             console.log('Navigation completed to:', redirectPath)
         } else {

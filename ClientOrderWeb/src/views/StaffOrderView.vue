@@ -65,7 +65,7 @@ import { fetchMenu, submitOrder, createReceipt } from '../services/OrderService.
 import { getCurrentDevice, getCurrentShop, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
 import { API_STATUS_CODES, PAYMENT_METHOD, PAYMENT_STATUS, SCREEN } from '../constants/app.constants.js'
-import { CLIENT_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
+import { CLIENT_ORDER_ALERT_MESS, STAFF_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
 
 // Import print functions từ LocalPrintService
 async function loadPrintService() {
@@ -224,13 +224,11 @@ async function handlePayment() {
         
         // Validation - kiểm tra thông tin bắt buộc
         if (!shopCode) {
-            console.error('No shop code available')
             alert(CLIENT_ORDER_ALERT_MESS.SHOP_CODE_NOT_FOUND)
             return
         }
         
         if (!currentDevice || !currentDevice.code) {
-            console.error('No device code available')
             alert(CLIENT_ORDER_ALERT_MESS.DEVICE_CODE_NOT_FOUND)
             return
         }
@@ -252,19 +250,15 @@ async function handlePayment() {
 
         // Bước 3: Gửi đơn hàng lên server
         const result = await submitOrder(orderData)
-        console.log(result)
-        if (!result) {
-            throw new Error('Failed to create order')
-        }
 
-        console.log('Order created successfully:', result)
+        if (!result) {
+            throw new Error(STAFF_ORDER_ALERT_MESS.ORDER_CREATE_FAIL)
+        }
 
         // Bước 4: Tạo hóa đơn với phương thức thanh toán tiền mặt
         const receiptResult = await createReceipt(result.id, {
             paymentMethod: PAYMENT_METHOD.CASH
         })
-        console.log(receiptResult)
-        console.log('Receipt created successfully:', receiptResult)
 
         if (receiptResult) {
             // Bước 5: In hóa đơn (nếu có cấu hình máy in)
@@ -273,11 +267,10 @@ async function handlePayment() {
             // Bước 6: Reset màn hình về trạng thái ban đầu
             resetOrder()
         }
-        
-        alert('Đơn hàng đã được tạo và in thành công!')
+
+        alert(STAFF_ORDER_ALERT_MESS.ORDER_CREATE_SUCCESS)
 
     } catch (error) {
-        console.error('Order creation failed:', error)
         const errorMessage = error.message || 'Unknown error'
         alert(CLIENT_ORDER_ALERT_MESS.ORDER_CREATE_ERROR.replace('{errorMessage}', errorMessage))
     }

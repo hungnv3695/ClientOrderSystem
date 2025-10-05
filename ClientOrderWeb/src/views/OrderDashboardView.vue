@@ -27,6 +27,8 @@ import { ordersApi } from '../constants/apiHelpers.js'
 import { io } from 'socket.io-client'
 import { SOCKET_URL } from '../config/appConfig.js'
 import { getCurrentShop } from '../services/AuthService.js'
+import { ORDER_DASHBOARD_ALERT_MESS } from '../constants/msg.constants.js'
+import { ORDER_STATUS } from '../constants/app.constants.js'
 
 const orders = ref([])
 
@@ -37,6 +39,7 @@ onMounted(async () => {
         orders.value = res.data || []
     } catch (e) {
         console.error('fetch numbers failed', e)
+        alert(ORDER_DASHBOARD_ALERT_MESS.ORDER_LOAD_ERROR)
     }
 
     // 2) Subscribe realtime qua socket
@@ -46,8 +49,8 @@ onMounted(async () => {
     })
 })
 
-const receivedOrders = computed(() => orders.value.filter(o => o.status === 'Received' || o.status === 'Processing'))
-const completedOrders = computed(() => orders.value.filter(o => o.status === 'Completed'))
+const receivedOrders = computed(() => orders.value.filter(o => o.status === ORDER_STATUS.RECEIVED || o.status === ORDER_STATUS.PROCESSING))
+const completedOrders = computed(() => orders.value.filter(o => o.status === ORDER_STATUS.COMPLETED))
 </script>
 
 <style scoped>
