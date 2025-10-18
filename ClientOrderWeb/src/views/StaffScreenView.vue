@@ -50,6 +50,15 @@
                 @click="navigateToStaffOrder"
               />
 
+              <!-- Quản lý đơn hàng -->
+              <FunctionScreenButton
+                title="Quản lý đơn hàng"
+                description="Xem và cập nhật đơn hàng"
+                icon-class="bi bi-list-check"
+                button-class="manage-btn"
+                @click="navigateToStaffOrderManage"
+              />
+
             </div>
           </div>
         </div>
@@ -104,6 +113,18 @@ const navigateToStaffOrder = () => {
   if (currentShopCode.value) {
     router.push({
       name: SCREEN.STAFF_ORDER.NAME,
+      query: { shopCode: currentShopCode.value }
+    })
+  } else {
+    alert(STAFF_SCREEN_ALERT_MESS.SHOP_CODE_NOT_FOUND)
+  }
+}
+
+// Sự kiện 4: Navigate to StaffOrderManage
+const navigateToStaffOrderManage = () => {
+  if (currentShopCode.value) {
+    router.push({
+      name: SCREEN.STAFF_ORDER_MANAGE.NAME,
       query: { shopCode: currentShopCode.value }
     })
   } else {
@@ -195,7 +216,13 @@ const navigateToStaffOrder = () => {
 
 @media (min-width: 992px) {
   .screen-buttons-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .screen-buttons-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -227,6 +254,15 @@ const navigateToStaffOrder = () => {
 
 .order-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, var(--earth-brown-light) 0%, var(--earth-brown) 100%);
+}
+
+.manage-btn {
+  background: linear-gradient(135deg, var(--nature-green-light) 0%, var(--nature-green-dark) 100%);
+  color: white;
+}
+
+.manage-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--nature-green-soft) 0%, var(--nature-green) 100%);
 }
 
 

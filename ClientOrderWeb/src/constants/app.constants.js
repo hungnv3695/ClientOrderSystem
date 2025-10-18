@@ -82,6 +82,10 @@ export const SCREEN = {
         NAME: 'StaffOrder',
         URL: '/StaffOrder'
     },
+    STAFF_ORDER_MANAGE : {
+        NAME: 'StaffOrderManage',
+        URL: '/StaffOrderManage'
+    },
     STAFF_SCREEN : {
         NAME: 'StaffScreen',
         URL: '/StaffScreen'
