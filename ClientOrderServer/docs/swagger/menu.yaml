@@ -1,0 +1,179 @@
+/api/menus:
+  get:
+    summary: Get all menus or a specific menu by ID
+    description: |
+      Retrieve menu information. Returns all menus if no ID is provided,
+      or a specific menu with its food items if ID is provided.
+    tags:
+      - Menu
+    parameters:
+      - in: query
+        name: id
+        schema:
+          type: integer
+        required: false
+        description: Menu ID (optional). If provided, returns specific menu with food items.
+        example: 1
+    responses:
+      200:
+        description: Menu(s) retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                data:
+                  oneOf:
+                    - type: array
+                      description: Array of all menus (when no ID provided)
+                      items:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          name:
+                            type: string
+                            example: Menu Sáng
+                          description:
+                            type: string
+                            nullable: true
+                            example: Thực đơn buổi sáng
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
+                    - type: object
+                      description: Specific menu with food items (when ID provided)
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          example: Menu Sáng
+                        description:
+                          type: string
+                          nullable: true
+                          example: Thực đơn buổi sáng
+                        food:
+                          type: array
+                          description: List of food items in this menu
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                                example: 1
+                              name:
+                                type: string
+                                example: Bánh mì
+                              price:
+                                type: integer
+                                description: Price in VND
+                                example: 20000
+                              description:
+                                type: string
+                                nullable: true
+                                example: Bánh mì thịt truyền thống
+                              image:
+                                type: string
+                                nullable: true
+                                example: banh-mi.jpg
+                              status:
+                                type: integer
+                                description: 0=Inactive, 1=Active
+                                example: 1
+                              MenuFood:
+                                type: object
+                                description: Junction table data
+                                properties:
+                                  menuId:
+                                    type: integer
+                                  foodId:
+                                    type: integer
+                                  createdAt:
+                                    type: string
+                                    format: date-time
+                                  updatedAt:
+                                    type: string
+                                    format: date-time
+                        createdAt:
+                          type: string
+                          format: date-time
+                        updatedAt:
+                          type: string
+                          format: date-time
+            examples:
+              allMenus:
+                summary: Get all menus
+                value:
+                  success: true
+                  data:
+                    - id: 1
+                      name: Menu Sáng
+                      description: Thực đơn buổi sáng
+                      createdAt: "2025-10-19T00:00:00.000Z"
+                      updatedAt: "2025-10-19T00:00:00.000Z"
+                    - id: 2
+                      name: Menu Trưa
+                      description: Thực đơn buổi trưa
+                      createdAt: "2025-10-19T00:00:00.000Z"
+                      updatedAt: "2025-10-19T00:00:00.000Z"
+              specificMenu:
+                summary: Get specific menu with foods
+                value:
+                  success: true
+                  data:
+                    id: 1
+                    name: Menu Sáng
+                    description: Thực đọn buổi sáng
+                    food:
+                      - id: 1
+                        name: Bánh mì
+                        price: 20000
+                        description: Bánh mì thịt truyền thống
+                        image: banh-mi.jpg
+                        status: 1
+                        MenuFood:
+                          menuId: 1
+                          foodId: 1
+                          createdAt: "2025-10-19T00:00:00.000Z"
+                          updatedAt: "2025-10-19T00:00:00.000Z"
+                      - id: 2
+                        name: Cà phê đen
+                        price: 15000
+                        description: Cà phê đen đậm đà
+                        image: ca-phe-den.jpg
+                        status: 1
+                        MenuFood:
+                          menuId: 1
+                          foodId: 2
+                          createdAt: "2025-10-19T00:00:00.000Z"
+                          updatedAt: "2025-10-19T00:00:00.000Z"
+                    createdAt: "2025-10-19T00:00:00.000Z"
+                    updatedAt: "2025-10-19T00:00:00.000Z"
+      404:
+        description: Menu not found (when specific ID provided but doesn't exist)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Menu not found
+      500:
+        description: Internal server error
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'

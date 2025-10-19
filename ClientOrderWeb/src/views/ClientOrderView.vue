@@ -355,6 +355,7 @@ async function handlePaid() {
     try {
         const receipt = await createReceipt(orderId, {
             paymentMethod: PAYMENT_METHOD.BANK_TRANSFER,
+            cashierId: getCurrentUser().id
         })
         
         // In hóa đơn nếu có máy in thông qua local service - không block payment

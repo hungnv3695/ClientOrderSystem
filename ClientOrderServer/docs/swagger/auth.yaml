@@ -1,0 +1,188 @@
+/api/auth/login:
+  post:
+    summary: Login with username, password, device code and shop code
+    tags:
+      - Authentication
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - username
+              - password
+              - deviceCode
+              - shopCode
+            properties:
+              username:
+                type: string
+                example: device
+                description: Username for login
+              password:
+                type: string
+                example: "123456"
+                description: User password
+              deviceCode:
+                type: string
+                example: KSK001
+                description: Device code (must be assigned to user)
+              shopCode:
+                type: string
+                example: HBC001
+                description: Shop code (user must have access to this shop)
+    responses:
+      200:
+        description: Login successful
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  description: JWT token for authentication
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 3
+                    username:
+                      type: string
+                      example: device
+                    role:
+                      type: string
+                      example: device
+                      enum: [device, staff, manager]
+                    code:
+                      type: string
+                      example: DEV001
+                    email:
+                      type: string
+                      example: device@company.com
+                    shopCode:
+                      type: string
+                      example: HBC001
+                    bankCode:
+                      type: string
+                      nullable: true
+                      example: VCB
+                    bankNumber:
+                      type: string
+                      nullable: true
+                      example: "0011004365510"
+                    bankNumberName:
+                      type: string
+                      nullable: true
+                      example: NGUYEN VIET HUNG
+                devices:
+                  type: object
+                  description: Current device and associated printer information
+                  properties:
+                    current:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                          example: KSK001
+                        name:
+                          type: string
+                          example: Surface Pro 5
+                        type:
+                          type: string
+                          example: tablet
+                        ip:
+                          type: string
+                          example: 192.168.11.6
+                        port:
+                          type: string
+                          example: "5173"
+                    printer:
+                      type: object
+                      nullable: true
+                      properties:
+                        code:
+                          type: string
+                          example: PRT00001
+                        name:
+                          type: string
+                          example: Epson TM-M10
+                        ip:
+                          type: string
+                          example: 192.168.11.9
+                        port:
+                          type: string
+                          example: "80"
+      400:
+        description: Missing required fields
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+      401:
+        description: Invalid credentials or no shop access
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Invalid username, password, or no access to shop
+      403:
+        description: Device not authorized or inactive
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: User không có quyền sử dụng thiết bị này
+
+/api/auth/profile:
+  get:
+    summary: Get current user profile (requires authentication)
+    tags:
+      - Authentication
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: Profile retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                user:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    username:
+                      type: string
+                    role:
+                      type: string
+                    email:
+                      type: string
+      401:
+        description: Unauthorized - Invalid or missing token
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'

@@ -12,6 +12,8 @@ const errorHandler = require('./middlewares/errorHandler');
 const { httpLogger, requestLogger } = require('./middlewares/requestLogger');
 const logger = require('./utils/logger');
 const config = require('./config/app.config');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger.config');
 
 // Log application startup
 logger.info('Starting ClientOrderServer application', {
@@ -26,6 +28,18 @@ app.use(express.json());
 // Add logging middlewares
 app.use(httpLogger); // Morgan HTTP logging
 app.use(requestLogger); // Custom request logging
+
+// Swagger API documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Client Order System API',
+}));
+
+// Serve swagger spec as JSON
+app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/menus', menuRoutes);

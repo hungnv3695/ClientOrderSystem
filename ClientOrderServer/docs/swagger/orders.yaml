@@ -1,0 +1,309 @@
+/api/orders/numbers:
+  get:
+    summary: Get today's order numbers for dashboard/caller screen
+    tags:
+      - Orders
+    security:
+      - bearerAuth: []
+    responses:
+      200:
+        description: List of order numbers retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      orderNumber:
+                        type: string
+                      status:
+                        type: integer
+                      note:
+                        type: string
+                      foods:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                            quantity:
+                              type: integer
+
+/api/orders:
+  post:
+    summary: Create a new order
+    tags:
+      - Orders
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - shopCode
+              - deviceCode
+              - items
+            properties:
+              shopCode:
+                type: string
+                example: HBC001
+              deviceCode:
+                type: string
+                example: KSK001
+              paymentStatus:
+                type: integer
+                enum: [0, 1]
+                description: 0=Unpaid, 1=Paid
+                example: 0
+              paymentMethod:
+                type: integer
+                enum: [0, 1]
+                description: 0=Cash, 1=Bank Transfer
+                example: 0
+              note:
+                type: string
+                example: Customer note
+              items:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - foodId
+                  properties:
+                    foodId:
+                      type: integer
+                      example: 1
+                    quantity:
+                      type: integer
+                      example: 2
+    responses:
+      200:
+        description: Order created successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                data:
+                  $ref: '#/components/schemas/Order'
+      400:
+        description: Invalid order data
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Error'
+
+/api/orders/{id}/status:
+  patch:
+    summary: Update order status
+    tags:
+      - Orders
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Order ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - status
+            properties:
+              status:
+                type: integer
+                enum: [0, 1, 2, 3, 4]
+                description: 0=Cancelled, 1=Received, 2=Processing, 3=Completed, 4=Delivered
+              shopCode:
+                type: string
+                example: HBC001
+    responses:
+      200:
+        description: Status updated successfully
+      404:
+        description: Order not found
+
+/api/orders/{id}/details:
+  patch:
+    summary: Update order details (items, note)
+    tags:
+      - Orders
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Order ID
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              note:
+                type: string
+              items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    foodId:
+                      type: integer
+                    quantity:
+                      type: integer
+    responses:
+      200:
+        description: Details updated successfully
+      404:
+        description: Order not found
+
+/api/orders/{id}/payment-status:
+  get:
+    summary: Check payment status of an order
+    tags:
+      - Orders
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+        description: Order ID
+    responses:
+      200:
+        description: Payment status retrieved
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    paid:
+                      type: boolean
+
+/api/orders/search:
+  get:
+    summary: Search orders with filters (Manager only)
+    tags:
+      - Orders
+      - Manager
+    security:
+      - bearerAuth: []
+    parameters:
+      - in: query
+        name: fromDate
+        schema:
+          type: string
+          pattern: ^\d{8}$
+        description: Start date in yyyymmdd format (e.g., 20250801)
+        example: "20250801"
+      - in: query
+        name: toDate
+        schema:
+          type: string
+          pattern: ^\d{8}$
+        description: End date in yyyymmdd format (e.g., 20250817)
+        example: "20250817"
+      - in: query
+        name: minTotal
+        schema:
+          type: integer
+        description: Minimum total price
+        example: 0
+      - in: query
+        name: maxTotal
+        schema:
+          type: integer
+        description: Maximum total price
+        example: 100000
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: Order status (comma-separated integers 0-4)
+        example: "2,3"
+      - in: query
+        name: paymentStatus
+        schema:
+          type: string
+        description: Payment status (comma-separated 0=Unpaid,1=Paid)
+        example: "1"
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Page number (default 1)
+        example: 1
+      - in: query
+        name: pageSize
+        schema:
+          type: integer
+        description: Items per page (default 50)
+        example: 20
+      - in: query
+        name: sortBy
+        schema:
+          type: string
+          enum: [updatedAt, totalPrice, orderNumber]
+        description: Sort field
+        example: updatedAt
+      - in: query
+        name: sortOrder
+        schema:
+          type: string
+          enum: [ASC, DESC]
+        description: Sort order
+        example: DESC
+    responses:
+      200:
+        description: Search results with pagination
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                data:
+                  type: object
+                  properties:
+                    rows:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Order'
+                    count:
+                      type: integer
+                    page:
+                      type: integer
+                    pageSize:
+                      type: integer
+      401:
+        description: Unauthorized
+      403:
+        description: Forbidden - Manager role required
