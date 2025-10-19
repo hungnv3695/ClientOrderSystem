@@ -4,16 +4,28 @@
  * Application Constants for Frontend
  */
 
-// Payment Methods
+// Payment Methods - INTEGER (đồng bộ với server)
 export const PAYMENT_METHOD = {
-    CASH: 'cash',
-    BANK_TRANSFER: 'bank_transfer'
+    CASH: 0,
+    BANK_TRANSFER: 1
 };
 
-// Payment Status
+// Payment Method Text Mapping
+export const PAYMENT_METHOD_TEXT = {
+    0: 'Tiền mặt',
+    1: 'Chuyển khoản'
+};
+
+// Payment Status - INTEGER (đồng bộ với server)
 export const PAYMENT_STATUS = {
-    PAID: 'Paid',
-    UNPAID: 'Unpaid'
+    UNPAID: 0,
+    PAID: 1
+};
+
+// Payment Status Text Mapping
+export const PAYMENT_STATUS_TEXT = {
+    0: 'Chưa thanh toán',
+    1: 'Đã thanh toán'
 };
 
 // API Status Codes
@@ -71,10 +83,11 @@ export const USER_ROLE = {
 };
 
 export const ORDER_STATUS = {
-    RECEIVED: 'Received',
-    PROCESSING: 'Processing',
-    COMPLETED: 'Completed',
-    DELIVERED: 'Delivered',
+    CANCELLED: 0,
+    RECEIVED: 1,
+    PROCESSING: 2,
+    COMPLETED: 3,
+    DELIVERED: 4,
 };
 
 export const SCREEN = {

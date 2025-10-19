@@ -6,7 +6,8 @@
                 <h5>(Vui lòng đợi đến khi đơn hoàn thành)</h5>
                 <div class="flex-column gap-2 pt-2 flex-grow-1 panel-box">
                     <OrderNumberTag v-for="order in receivedOrders" :key="order.id"
-                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received' || order.status === 'Processing'" />
+                        :number="order.orderNumber.slice(-4)" 
+                        :enabled="order.status === ORDER_STATUS.RECEIVED || order.status === ORDER_STATUS.PROCESSING" />
                 </div>
             </BCol>
             <BCol cols="5" class="h-100 d-flex flex-column">

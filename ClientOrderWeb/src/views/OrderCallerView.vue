@@ -5,8 +5,8 @@
                 <h4>Đã nhận</h4>
                 <BContainer fluid class="panel-box d-flex flex-column gap-2 pt-2 flex-grow-1 overflow-auto">
                     <OrderNumberTag v-for="order in receivedOrders" :key="order.id"
-                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Received'" :clickable="true"
-                        @click="processOrderClick(order.id, 'Processing')" />
+                        :number="order.orderNumber.slice(-4)" :enabled="order.status === ORDER_STATUS.RECEIVED || order.status === ORDER_STATUS.PROCESSING" :clickable="true"
+                        @click="processOrderClick(order.id, ORDER_STATUS.PROCESSING)" />
                 </BContainer>
             </BCol>
             <BCol cols="4" class="h-100 d-flex flex-column">
@@ -14,8 +14,8 @@
                 <BContainer fluid class="panel-box d-flex flex-column gap-2 pt-2 flex-grow-1 overflow-auto">
                     <ProcessingOrderTag v-for="order in processingOrders" :key="order.id" :orderId="order.id"
                         :orderNumber="order.orderNumber.slice(-4)" :items="order.foods" primaryButtonText="<< Đã nhận"
-                        secondaryButtonText="Hoàn thành >>" @primary="processOrderClick(order.id, 'Received')"
-                        @secondary="processOrderClick(order.id, 'Completed')" />
+                        secondaryButtonText="Hoàn thành >>" @primary="processOrderClick(order.id, ORDER_STATUS.RECEIVED)"
+                        @secondary="processOrderClick(order.id, ORDER_STATUS.COMPLETED)" />
                 </BContainer>
             </BCol>
             <BCol cols="5" class="h-100 d-flex flex-column">
@@ -24,16 +24,16 @@
                     <CompletedOrderTag v-for="order in completedOrders" :key="order.id" :orderId="order.id"
                         :orderNumber="order.orderNumber.slice(-4)" :items="order.foods"
                         primaryButtonText="<< Đang thực hiện" secondaryButtonText="Đã giao >>"
-                        @primary="processOrderClick(order.id, 'Processing')"
-                        @secondary="processOrderClick(order.id, 'Delivered')" @announce="announceOrder(order)" />
+                        @primary="processOrderClick(order.id, ORDER_STATUS.PROCESSING)"
+                        @secondary="processOrderClick(order.id, ORDER_STATUS.DELIVERED)" @announce="announceOrder(order)" />
                 </BContainer>
             </BCol>
             <BCol cols="1" class="h-100 d-flex flex-column">
                 <h4>Đã giao</h4>
                 <BContainer fluid class="panel-box d-flex flex-column gap-2 pt-2 flex-grow-1 overflow-auto">
                     <OrderNumberTag v-for="order in deliveredOrders" :key="order.id"
-                        :number="order.orderNumber.slice(-4)" :enabled="order.status === 'Delivered'" :clickable="true"
-                        @click="processOrderClick(order.id, 'Completed')" />
+                        :number="order.orderNumber.slice(-4)" :enabled="order.status === ORDER_STATUS.DELIVERED" :clickable="true"
+                        @click="processOrderClick(order.id, ORDER_STATUS.COMPLETED)" />
                 </BContainer>
             </BCol>
         </BRow>

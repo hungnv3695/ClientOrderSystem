@@ -112,3 +112,38 @@ export const getRelativeTime = (dateString) => {
         return ''
     }
 }
+
+/**
+ * Parse datetime string from VARCHAR(14) 'yyyyMMddHHmmss' format to Date object
+ * This is used to parse paidAt and assignedAt fields from database
+ * @param {string} dateTimeString - DateTime string in format 'yyyyMMddHHmmss' (14 characters)
+ * @returns {Date|null} Date object or null if invalid
+ * @example
+ * parseDateTimeString('20251019161530') // returns Date object for 2025-10-19 16:15:30
+ */
+export const parseDateTimeString = (dateTimeString) => {
+    if (!dateTimeString || typeof dateTimeString !== 'string' || dateTimeString.length !== 14) {
+        return null
+    }
+
+    try {
+        const year = dateTimeString.substring(0, 4)
+        const month = dateTimeString.substring(4, 6)
+        const day = dateTimeString.substring(6, 8)
+        const hour = dateTimeString.substring(8, 10)
+        const minute = dateTimeString.substring(10, 12)
+        const second = dateTimeString.substring(12, 14)
+
+        const date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`)
+
+        // Validate if the date is valid
+        if (isNaN(date.getTime())) {
+            return null
+        }
+
+        return date
+    } catch (error) {
+        console.error('Error parsing datetime string:', error)
+        return null
+    }
+}

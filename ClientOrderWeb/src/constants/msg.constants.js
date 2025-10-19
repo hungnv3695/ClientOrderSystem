@@ -14,6 +14,7 @@ export const STAFF_SCREEN_ALERT_MESS = {
 export const STAFF_ORDER_ALERT_MESS = {
   ORDER_CREATE_SUCCESS: 'Đơn hàng đã được tạo và in thành công!',
   ORDER_CREATE_FAIL: 'Tạo đơn hàng thất bại',
+  CASHIER_NOT_FOUND: 'Không thể tạo đơn hàng: Thiếu thông tin nhân viên thu ngân',
 }
 
 export const ORDER_DASHBOARD_ALERT_MESS = {

@@ -1,4 +1,5 @@
 import { DEVICE_CODE } from '../config/appConfig.js'
+import { parseDateTimeString } from '../utils/dateTime.js'
 
 
 export function printReceipt(ip, port, deviceId, receipt) {
@@ -77,7 +78,13 @@ export function printReceipt(ip, port, deviceId, receipt) {
 export function createReceiptContent(receipt) {
     const toVnd = (n) => Number(n || 0).toLocaleString('vi-VN');
     const dwMap = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    const paidAt = receipt?.paidAt ? new Date(receipt.paidAt) : (receipt?.createdAt ? new Date(receipt.createdAt) : new Date());
+    
+    // Parse paidAt from VARCHAR(14) 'yyyyMMddHHmmss' format
+    let paidAt = parseDateTimeString(receipt?.paidAt);
+    if (!paidAt) {
+        paidAt = receipt?.createdAt ? new Date(receipt.createdAt) : new Date();
+    }
+    
     const dow = dwMap[paidAt.getDay()];
     const hh = String(paidAt.getHours()).padStart(2, '0');
     const mm = String(paidAt.getMinutes()).padStart(2, '0');
@@ -87,8 +94,9 @@ export function createReceiptContent(receipt) {
     const y = paidAt.getFullYear();
     const fmtDate = `${dow} ${hh}:${mm}:${ss} ${d}/${m}/${y}`;
 
-    const pmMap = { cash: 'Tiền mặt', card: 'Thẻ', ewallet: 'Ví điện tử' };
-    const pm = pmMap[receipt?.paymentMethod] || receipt?.paymentMethod || '';
+    // Map paymentMethod INTEGER to text: 0=Tiền mặt, 1=Chuyển khoản
+    const pmMap = { 0: 'Tiền mặt', 1: 'Chuyển khoản' };
+    const pm = pmMap[receipt?.paymentMethod] !== undefined ? pmMap[receipt.paymentMethod] : '';
 
     const LINE_WIDTH = 35; // số ký tự cho một dòng nội dung + canh phải số tiền
     const SEP = '-'.repeat(LINE_WIDTH);

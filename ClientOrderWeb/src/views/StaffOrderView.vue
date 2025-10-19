@@ -62,7 +62,7 @@ import FoodCard from '../components/FoodCard.vue'
 import OrderList from '../components/OrderList.vue'
 import ConfirmOrderModal from '../components/ConfirmOrderModal.vue'
 import { fetchMenu, submitOrder, createReceipt } from '../services/OrderService.js'
-import { getCurrentDevice, getCurrentShop, getPrinterConfigFromDevice } from '../services/AuthService.js'
+import { getCurrentDevice, getCurrentShop, getCurrentUser, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
 import { API_STATUS_CODES, PAYMENT_METHOD, PAYMENT_STATUS, SCREEN } from '../constants/app.constants.js'
 import { CLIENT_ORDER_ALERT_MESS, STAFF_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
@@ -221,7 +221,13 @@ async function handlePayment() {
         // Bước 1: Lấy thông tin shop và device từ localStorage
         const shopCode = getCurrentShop()
         const currentDevice = getCurrentDevice()
-        
+        const cashierId = getCurrentUser()?.id
+
+        if (!cashierId) {
+            alert(STAFF_ORDER_ALERT_MESS.CASHIER_NOT_FOUND)
+            return
+        }
+
         // Validation - kiểm tra thông tin bắt buộc
         if (!shopCode) {
             alert(CLIENT_ORDER_ALERT_MESS.SHOP_CODE_NOT_FOUND)
@@ -239,6 +245,7 @@ async function handlePayment() {
             deviceCode: currentDevice.code,
             paymentStatus: PAYMENT_STATUS.PAID,
             paymentMethod: PAYMENT_METHOD.CASH,
+            cashierId: cashierId,  // Nhân viên đặt đơn không có cashierId
             note: 'Đơn hàng từ nhân viên',
             items: orderItems.value.map(item => ({
                 name: item.name,
@@ -257,7 +264,8 @@ async function handlePayment() {
 
         // Bước 4: Tạo hóa đơn với phương thức thanh toán tiền mặt
         const receiptResult = await createReceipt(result.id, {
-            paymentMethod: PAYMENT_METHOD.CASH
+            paymentMethod: PAYMENT_METHOD.CASH,
+            cashierId: cashierId
         })
 
         if (receiptResult) {

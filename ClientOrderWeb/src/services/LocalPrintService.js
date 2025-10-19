@@ -8,6 +8,8 @@
 
 import { PRINT_SERVICE_URL } from '../config/appConfig.js'
 import { API_METHODS } from '../constants/apiEndpoints.js'
+import { parseDateTimeString } from '../utils/dateTime.js'
+
 // ===== CONSTANTS =====
 
 /** Timeout mặc định cho print operations - giảm xuống để tránh browser timeout */
@@ -200,19 +202,19 @@ export async function printReceipt(printerIp, port = '', deviceId = 'local_print
  * @throws {Error} Nếu receipt data không hợp lệ
  */
 export function createReceiptData(receiptResponse) {
-    // Validate input
-    if (!receiptResponse || !receiptResponse.receiptId) {
-        throw new Error('Receipt data không hợp lệ - thiếu receiptId')
+    // Validate input - server trả về 'id' thay vì 'receiptId'
+    if (!receiptResponse || !receiptResponse.id) {
+        throw new Error('Receipt data không hợp lệ - thiếu id')
     }
 
     const {
-        receiptId,
+        id,
         receiptNumber,
         totalAmount,
         finalAmount,
         discountAmount = 0,
         paymentMethod,
-        paidAt,
+        paidAt: paidAtString,
         created_at,
         items = []
     } = receiptResponse
@@ -222,14 +224,22 @@ export function createReceiptData(receiptResponse) {
         throw new Error('Receipt data không hợp lệ - thiếu amount')
     }
 
+    // Parse paidAt from VARCHAR(14) 'yyyyMMddHHmmss' format
+    let paidAt = parseDateTimeString(paidAtString);
+    if (!paidAt) {
+        paidAt = created_at ? new Date(created_at) : new Date();
+    }
+
+    const formattedPaidAt = paidAt.toISOString();
+
     const formattedData = {
         receiptNumber: receiptNumber,
         items: Array.isArray(items) ? items : [],
-        totalAmount: parseFloat(totalAmount) || 0,
-        discountAmount: parseFloat(discountAmount) || 0,
-        finalAmount: parseFloat(finalAmount) || parseFloat(totalAmount) || 0,
-        paymentMethod: paymentMethod || 'N/A',
-        paidAt: paidAt || created_at || new Date().toISOString()
+        totalAmount: parseInt(totalAmount) || 0, // INTEGER không phải DECIMAL
+        discountAmount: parseInt(discountAmount) || 0,
+        finalAmount: parseInt(finalAmount) || parseInt(totalAmount) || 0,
+        paymentMethod: paymentMethod !== undefined ? paymentMethod : 0, // INTEGER: 0=cash, 1=bank_transfer
+        paidAt: formattedPaidAt
     }
 
     console.log('Created receipt data:', formattedData)
