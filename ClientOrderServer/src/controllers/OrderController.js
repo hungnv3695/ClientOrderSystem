@@ -84,7 +84,7 @@ exports.updateStatus = async (req, res) => {
     });
 
     try {
-        if (!status) {
+        if (status === undefined || status === null) {
             logger.logOrderEvent('status_update_failed', {
                 orderId: id,
                 reason: 'missing_status',

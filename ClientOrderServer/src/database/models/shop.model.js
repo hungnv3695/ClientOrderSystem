@@ -12,13 +12,8 @@ module.exports = (sequelize, DataTypes) => {
             unique: true,
         },
         name: {
-            type: DataTypes.STRING(255),
+            type: DataTypes.STRING(100),
             allowNull: false,
-        },
-        companyId: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            field: 'company_id',
         },
         address: {
             type: DataTypes.TEXT,
@@ -29,18 +24,13 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
         },
         email: {
-            type: DataTypes.STRING(255),
+            type: DataTypes.STRING(100),
             allowNull: true,
-        },
-        managerId: {
-            type: DataTypes.INTEGER,
-            allowNull: true,
-            field: 'manager_id',
         },
         status: {
-            type: DataTypes.ENUM('active', 'inactive'),
+            type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 'active',
+            defaultValue: 1,
         },
         bankCode: {
             type: DataTypes.STRING(20),
@@ -57,20 +47,43 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: true,
             field: 'bank_number_name',
         },
+        companyId: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            field: 'company_id',
+        },
+        createdCd: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            field: 'created_cd'
+        },
+        updatedCd: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            field: 'updated_cd'
+        },
     }, {
-        tableName: 'shop',
+        tableName: 'm_shop',
         timestamps: true,
         underscored: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at',
         indexes: [
             { fields: ['company_id'] },
-            { fields: ['manager_id'] },
             { fields: ['code'], unique: true },
             { fields: ['name'] },
             { fields: ['bank_code'] },
             { fields: ['bank_number'] },
         ],
+        hooks: {
+            beforeCreate: (shop, options) => {
+                shop.createdCd = options.userId || 'SYSTEM';
+                shop.updatedCd =  options.userId || 'SYSTEM';
+            },
+            beforeUpdate: (shop, options) => {
+                shop.updatedCd = options.userId || 'SYSTEM';
+            }
+        }
     });
 
     return Shop;

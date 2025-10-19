@@ -103,7 +103,11 @@ async function getOrdersByStatus(shopCode = null) {
     endOfDay.setHours(23, 59, 59, 999);
 
     const where = {
-        status: { [Op.in]: [ORDER_STATUS.RECEIVED, ORDER_STATUS.PROCESSING, ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED] },
+        status: { [Op.in]: [
+            ORDER_STATUS.RECEIVED, 
+            ORDER_STATUS.PROCESSING, 
+            ORDER_STATUS.COMPLETED, 
+            ORDER_STATUS.DELIVERED] },
         paymentStatus: PAYMENT_STATUS.PAID, // Chỉ lấy đơn đã thanh toán
         createdAt: { [Op.between]: [startOfDay, endOfDay] },
     };
@@ -144,7 +148,7 @@ async function getOrdersByStatus(shopCode = null) {
  * Lấy danh sách order numbers cho dashboard
  * Dùng getOrdersByStatus để lấy dữ liệu rồi rút gọn field theo định dạng cần thiết
  * @param {string} shopCode - Mã cửa hàng để lọc orders (optional)
- * @returns {Promise<Array<{id:number, orderNumber:string, status:string}>>}
+ * @returns {Promise<Array<{id:number, orderNumber:string, status:integer}>>}
  */
 async function getOrderNumbersForDashboard(shopCode = null) {
     const orders = await getOrdersByStatus(shopCode);
@@ -154,7 +158,7 @@ async function getOrderNumbersForDashboard(shopCode = null) {
 /**
  * Cập nhật trạng thái đơn hàng theo orderId
  * @param {number} orderId
- * @param {'Received' | 'Processing' | 'Completed' | 'Cancelled'} status
+ * @param {'1: Received' | '2: Processing' | '3: Completed' | '4: Delivered' | '0: Cancelled'} status
  */
 async function updateOrderStatus(orderId, status) {
     const allowed = [ORDER_STATUS.RECEIVED, ORDER_STATUS.PROCESSING, ORDER_STATUS.COMPLETED, ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED];
@@ -227,7 +231,7 @@ async function isOrderPaid(orderId) {
 /**
  * Tìm kiếm đơn hàng theo điều kiện.
  * Hỗ trợ: khoảng ngày tạo (fromDate/toDate), khoảng tổng tiền (minTotal/maxTotal), status, paymentStatus, phân trang và sắp xếp.
- * @param {{ fromDate?: string, toDate?: string, minTotal?: number, maxTotal?: number, status?: string[]|string, paymentStatus?: string[]|string, page?: number, pageSize?: number, sortBy?: string, sortOrder?: 'ASC'|'DESC' }} filters
+ * @param {{ fromDate?: string, toDate?: string, minTotal?: number, maxTotal?: number, status?: integer|string, paymentStatus?: string[]|string, page?: number, pageSize?: number, sortBy?: string, sortOrder?: 'ASC'|'DESC' }} filters
  * @returns {Promise<{ rows: any[], count: number, page: number, pageSize: number }>}
  */
 async function searchOrders(filters = {}) {
@@ -260,9 +264,11 @@ async function searchOrders(filters = {}) {
 
     // Trạng thái đơn hàng
     const allowedStatuses = Object.values(ORDER_STATUS);
+    
     const statuses = Array.isArray(filters.status)
-        ? filters.status
-        : (typeof filters.status === 'string' ? filters.status.split(',').map(s => s.trim()).filter(Boolean) : undefined);
+        ? filters.status.map(s => parseInt(s)).filter(s => !isNaN(s))
+        : (typeof filters.status === 'string' ? filters.status.split(',').map(s => parseInt(s.trim())).filter(s => !isNaN(s)) : 
+           typeof filters.status === 'number' ? [filters.status] : undefined);
     if (statuses && statuses.length) {
         const valid = statuses.filter(s => allowedStatuses.includes(s));
         if (valid.length === 1) where.status = valid[0];
@@ -272,8 +278,9 @@ async function searchOrders(filters = {}) {
     // Trạng thái thanh toán
     const allowedPays = Object.values(PAYMENT_STATUS);
     const pays = Array.isArray(filters.paymentStatus)
-        ? filters.paymentStatus
-        : (typeof filters.paymentStatus === 'string' ? filters.paymentStatus.split(',').map(s => s.trim()).filter(Boolean) : undefined);
+        ? filters.paymentStatus.map(p => parseInt(p)).filter(p => !isNaN(p))
+        : (typeof filters.paymentStatus === 'string' ? filters.paymentStatus.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p)) : 
+           typeof filters.paymentStatus === 'number' ? [filters.paymentStatus] : undefined);
     if (pays && pays.length) {
         const valid = pays.filter(p => allowedPays.includes(p));
         if (valid.length === 1) where.paymentStatus = valid[0];

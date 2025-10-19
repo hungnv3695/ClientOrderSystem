@@ -49,6 +49,10 @@ ReceiptItem.belongsTo(Receipt, { foreignKey: 'receipt_id', as: 'receipt' });
 Company.hasMany(Shop, { foreignKey: 'company_id', as: 'shops' });
 Shop.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
 
+// Company - User (One-to-Many)
+Company.hasMany(User, { foreignKey: 'company_id', as: 'users' });
+User.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+
 // User - Shop (Many-to-Many through UserShop)
 User.belongsToMany(Shop, { through: UserShop, foreignKey: 'user_id', otherKey: 'shop_id', as: 'shops' });
 Shop.belongsToMany(User, { through: UserShop, foreignKey: 'shop_id', otherKey: 'user_id', as: 'users' });
@@ -59,21 +63,18 @@ UserShop.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Shop.hasMany(UserShop, { foreignKey: 'shop_id', as: 'userAssignments' });
 UserShop.belongsTo(Shop, { foreignKey: 'shop_id', as: 'shop' });
 
-// Shop.manager -> User (manager_id) (optional)
-User.hasMany(Shop, { foreignKey: 'manager_id', as: 'managedShops' });
-Shop.belongsTo(User, { foreignKey: 'manager_id', as: 'manager' });
-
 // Device - User associations
 User.hasMany(Device, { foreignKey: 'user_id', as: 'devices' });
 Device.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 // DeviceType - Device associations
-DeviceType.hasMany(Device, { foreignKey: 'type', sourceKey: 'code', as: 'devices' });
-Device.belongsTo(DeviceType, { foreignKey: 'type', targetKey: 'code', as: 'deviceType' });
+DeviceType.hasMany(Device, { foreignKey: 'type_id', as: 'devices' });
+Device.belongsTo(DeviceType, { foreignKey: 'type_id', as: 'deviceType' });
 
 // Keep seeding for menu/food only
-sequelize.sync({ alter: true }).then(async () => {
-    console.log('Database synchronized');
+// TEMPORARY: Using force: true to drop and recreate all tables
+sequelize.sync({ force: true }).then(async () => {
+    console.log('Database synchronized with force: true - All tables recreated');
     
     // Pass all models to the seed function
     const models = {

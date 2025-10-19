@@ -29,11 +29,30 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
                 field: 'unit_price',
             },
+            createdCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                field: 'created_cd',
+            },
+            updatedCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                field: 'updated_cd',
+            },
         },
         {
-            tableName: 'order_food',
+            tableName: 't_order_food',
             timestamps: true,
             underscored: true,
+            hooks: {
+                beforeCreate: (orderFood, options) => {
+                    orderFood.createdCd = options.userId || 'SYSTEM';
+                    orderFood.updatedCd = options.userId || 'SYSTEM';
+                },
+                beforeUpdate: (orderFood, options) => {
+                    orderFood.updatedCd = options.userId || 'SYSTEM';
+                }
+            }
         }
     );
 

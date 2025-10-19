@@ -1,11 +1,10 @@
 // src/database/models/receiptItem.model.js
 module.exports = (sequelize, DataTypes) => {
     const ReceiptItem = sequelize.define('ReceiptItem', {
-        receiptItemId: {
+        id: {
             type: DataTypes.BIGINT,
             autoIncrement: true,
             primaryKey: true,
-            field: 'receipt_item_id',
         },
         receiptId: {
             type: DataTypes.BIGINT,
@@ -13,31 +12,36 @@ module.exports = (sequelize, DataTypes) => {
             field: 'receipt_id',
         },
         itemId: {
-            type: DataTypes.BIGINT,
-            allowNull: true,
+            type: DataTypes.INTEGER,
+            allowNull: false,
             field: 'item_id',
         },
         itemName: {
-            type: DataTypes.STRING(255),
+            type: DataTypes.STRING(100),
             allowNull: false,
             field: 'item_name',
         },
-        qty: {
+        quantity: {
             type: DataTypes.INTEGER,
             allowNull: false,
         },
         unitPrice: {
-            type: DataTypes.DECIMAL(12, 2),
+            type: DataTypes.INTEGER,
             allowNull: false,
             field: 'unit_price',
         },
         totalPrice: {
-            type: DataTypes.DECIMAL(12, 2),
+            type: DataTypes.INTEGER,
             allowNull: false,
             field: 'total_price',
         },
+        createdCd: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            field: 'created_cd',
+        },
     }, {
-        tableName: 'receipt_item',
+        tableName: 't_receipt_item',
         timestamps: true,
         underscored: true,
         createdAt: 'created_at',
@@ -46,6 +50,11 @@ module.exports = (sequelize, DataTypes) => {
             { fields: ['receipt_id'] },
             { fields: ['item_id'] },
         ],
+        hooks: {
+            beforeCreate: (receiptItem, options) => {
+                receiptItem.createdCd = options.userId || 'SYSTEM';
+            }
+        }
     });
 
     return ReceiptItem;

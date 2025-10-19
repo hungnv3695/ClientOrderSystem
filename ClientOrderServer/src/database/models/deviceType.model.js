@@ -3,7 +3,8 @@ module.exports = (sequelize, DataTypes) => {
         id: { 
             type: DataTypes.INTEGER, 
             primaryKey: true, 
-            autoIncrement: true 
+            autoIncrement: true,
+            allowNull: false
         },
         code: { 
             type: DataTypes.STRING(20), 
@@ -11,16 +12,16 @@ module.exports = (sequelize, DataTypes) => {
         },
         name: { 
             type: DataTypes.STRING(20), 
-            allowNull: false 
+            allowNull: true
         },
         description: { 
-            type: DataTypes.STRING(255), 
+            type: DataTypes.TEXT, 
             allowNull: true 
         }
     }, {
-        tableName: 'device_type',
+        tableName: 'm_device_type',
         underscored: true,
-        timestamps: true,
+        timestamps: false,
         indexes: [
             { unique: true, fields: ['code'] },
             { fields: ['name'] }

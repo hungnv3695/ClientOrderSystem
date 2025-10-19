@@ -1,6 +1,7 @@
 // controllers/manager/ShopController.js
 const ShopService = require('../../services/manager/ShopService');
 const logger = require('../../utils/logger');
+const { SHOP_STATUS } = require('../../constants/app.constants');
 
 class ShopController {
     /**
@@ -20,7 +21,6 @@ class ShopController {
                 address,
                 phone,
                 email,
-                managerId,
                 status,
                 createdAtFrom,
                 createdAtTo,
@@ -39,8 +39,7 @@ class ShopController {
                 address: address?.trim() || '',
                 phone: phone?.trim() || '',
                 email: email?.trim() || '',
-                managerId: managerId ? parseInt(managerId) : null,
-                status: status?.trim() || '',
+                status: status ? parseInt(status) : null,
                 createdAtFrom: createdAtFrom || '',
                 createdAtTo: createdAtTo || '',
                 page: parseInt(page) || 1,
@@ -226,14 +225,13 @@ class ShopController {
      */
     async createShop(req, res) {
         try {
-            const { code, name, companyId, address, phone, email, managerId, description } = req.body;
+            const { code, name, companyId, address, phone, email, description } = req.body;
             
             // Log shop creation attempt
             logger.logOrderEvent('shop_creation_attempt', {
                 code,
                 name,
                 companyId,
-                managerId,
                 hasBody: !!req.body,
                 bodyType: typeof req.body,
                 ip: req.ip,
@@ -257,11 +255,9 @@ class ShopController {
             const result = await ShopService.createShop({
                 code,
                 name,
-                companyId,
                 address,
                 phone,
                 email,
-                managerId,
                 description
             });
 
@@ -284,7 +280,6 @@ class ShopController {
                 code,
                 name,
                 companyId,
-                managerId,
                 ip: req.ip
             });
 
@@ -315,7 +310,7 @@ class ShopController {
     async updateShop(req, res) {
         try {
             const { id } = req.params;
-            const { code, name, companyId, address, phone, email, managerId, description, status } = req.body;
+            const { code, name, companyId, address, phone, email, description, status } = req.body;
 
             // Log shop update attempt
             logger.logOrderEvent('shop_update_attempt', {
@@ -323,7 +318,6 @@ class ShopController {
                 code,
                 name,
                 companyId,
-                managerId,
                 status,
                 hasBody: !!req.body,
                 bodyType: typeof req.body,
@@ -367,7 +361,6 @@ class ShopController {
                 address,
                 phone,
                 email,
-                managerId,
                 description,
                 status
             });
@@ -389,7 +382,6 @@ class ShopController {
                 code,
                 name,
                 companyId,
-                managerId,
                 status,
                 ip: req.ip
             });
@@ -447,7 +439,7 @@ class ShopController {
             }
 
             // Validate status
-            if (!status || !['active', 'inactive'].includes(status)) {
+            if (parseInt(status) !== SHOP_STATUS.ACTIVE && parseInt(status) !== SHOP_STATUS.INACTIVE) {
                 logger.logOrderEvent('shop_status_update_failed', {
                     shopId,
                     reason: 'invalid_status',

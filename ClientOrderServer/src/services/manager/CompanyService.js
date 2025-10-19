@@ -1,4 +1,5 @@
 // services/manager/CompanyService.js
+const { COMPANY_STATUS } = require('../../constants/app.constants');
 const { Company } = require('../../database');
 const { Op } = require('sequelize');
 
@@ -12,7 +13,7 @@ class CompanyService {
      * @param {string} params.address - Địa chỉ
      * @param {string} params.phone - Số điện thoại
      * @param {string} params.email - Email
-     * @param {string} params.status - Trạng thái ('active', 'inactive')
+     * @param {integer} params.status - Trạng thái (1: 'active', 0: 'inactive')
      * @param {string} params.createdAtFrom - Từ ngày tạo (YYYY-MM-DD)
      * @param {string} params.createdAtTo - Đến ngày tạo (YYYY-MM-DD)
      * @param {number} params.page - Trang hiện tại (mặc định: 1)
@@ -81,8 +82,8 @@ class CompanyService {
             }
 
             // Tìm kiếm theo trạng thái
-            if (status && status.trim() && ['active', 'inactive'].includes(status.trim())) {
-                whereConditions.status = status.trim();
+            if (status == COMPANY_STATUS.ACTIVE || status == COMPANY_STATUS.INACTIVE) {
+                whereConditions.status = status;
             }
 
             // Lọc theo khoảng thời gian tạo
@@ -187,7 +188,7 @@ class CompanyService {
         try {
             const companies = await Company.findAll({
                 where: {
-                    status: 'active'
+                    status: COMPANY_STATUS.ACTIVE
                 },
                 attributes: ['id', 'code', 'name'],
                 order: [['name', 'ASC']]
@@ -252,7 +253,7 @@ class CompanyService {
      * @param {string} companyData.email - Email (tùy chọn)
      * @param {string} companyData.website - Website (tùy chọn)
      * @param {string} companyData.description - Mô tả (tùy chọn)
-     * @param {string} companyData.status - Trạng thái: 'active' hoặc 'inactive' (mặc định: 'active')
+     * @param {integer} companyData.status - Trạng thái: 1 (active) hoặc 0 (inactive) (mặc định: 1)
      * @returns {Object} Thông tin công ty vừa tạo
      */
     async createCompany(companyData) {
@@ -292,19 +293,8 @@ class CompanyService {
                 }
             }
 
-            // Kiểm tra số điện thoại format nếu có
-            // if (phone && phone.trim()) {
-            //     const phoneRegex = /^[0-9+\-\s\(\)]{10,15}$/;
-            //     if (!phoneRegex.test(phone.trim().replace(/\s/g, ''))) {
-            //         return {
-            //             success: false,
-            //             message: 'Số điện thoại không đúng định dạng'
-            //         };
-            //     }
-            // }
-
             // Validate status nếu có
-            if (status && !['active', 'inactive'].includes(status)) {
+            if (status !== COMPANY_STATUS.ACTIVE && status !== COMPANY_STATUS.INACTIVE) {
                 return {
                     success: false,
                     message: 'Trạng thái phải là "active" hoặc "inactive"'
@@ -345,7 +335,7 @@ class CompanyService {
                 email: email?.trim() || null,
                 website: website?.trim() || null,
                 description: description?.trim() || null,
-                status: status || 'active'
+                status: status
             });
 
             const newCompany = await Company.create({
@@ -357,7 +347,7 @@ class CompanyService {
                 email: email?.trim() || null,
                 website: website?.trim() || null,
                 description: description?.trim() || null,
-                status: status || 'active'
+                status: status
             });
 
             console.log('CompanyService.createCompany - Created company:', JSON.stringify(newCompany.toJSON(), null, 2));
@@ -407,7 +397,7 @@ class CompanyService {
      * @param {string} companyData.email - Email (tùy chọn)
      * @param {string} companyData.website - Website (tùy chọn)
      * @param {string} companyData.description - Mô tả (tùy chọn)
-     * @param {string} companyData.status - Trạng thái: 'active' hoặc 'inactive' (tùy chọn)
+     * @param {integer} companyData.status - Trạng thái: 1 (active) hoặc 0 (inactive) (tùy chọn)
      * @returns {Object} Thông tin công ty đã cập nhật
      */
     async updateCompany(id, companyData) {
@@ -465,7 +455,7 @@ class CompanyService {
             }
 
             // Validate status nếu có
-            if (status && !['active', 'inactive'].includes(status)) {
+            if (status !== COMPANY_STATUS.ACTIVE && status !== COMPANY_STATUS.INACTIVE) {
                 return {
                     success: false,
                     message: 'Trạng thái phải là "active" hoặc "inactive"'
@@ -519,7 +509,7 @@ class CompanyService {
             };
 
             // Thêm status nếu có
-            if (status) {
+            if (status == COMPANY_STATUS.ACTIVE || status == COMPANY_STATUS.INACTIVE) {
                 updateData.status = status;
             }
 
@@ -569,13 +559,13 @@ class CompanyService {
     /**
      * Cập nhật trạng thái công ty
      * @param {number} id - ID công ty
-     * @param {string} status - Trạng thái mới: 'active' hoặc 'inactive'
+     * @param {integer} status - Trạng thái mới: 1 (active) hoặc 0 (inactive)
      * @returns {Object} Kết quả cập nhật
      */
     async updateCompanyStatus(id, status) {
         try {
             // Validate status
-            if (!['active', 'inactive'].includes(status)) {
+            if (status !== COMPANY_STATUS.ACTIVE && status !== COMPANY_STATUS.INACTIVE) {
                 return {
                     success: false,
                     message: 'Trạng thái phải là "active" hoặc "inactive"'

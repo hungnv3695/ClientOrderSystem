@@ -1,7 +1,7 @@
 // services/manager/ShopService.js
 const { Shop, Company } = require('../../database');
 const { Op } = require('sequelize');
-const { STATUS, STATUS_VALUES, PAGINATION, MESSAGES } = require('../../constants/app.constants');
+const { SHOP_STATUS } = require('../../constants/app.constants');
 
 class ShopService {
     /**
@@ -14,8 +14,7 @@ class ShopService {
      * @param {string} params.address - Địa chỉ
      * @param {string} params.phone - Số điện thoại
      * @param {string} params.email - Email
-     * @param {number} params.managerId - ID quản lý
-     * @param {string} params.status - Trạng thái ('active', 'inactive')
+     * @param {integer} params.status - Trạng thái (1: 'active', 0: 'inactive')
      * @param {string} params.createdAtFrom - Từ ngày tạo (YYYY-MM-DD)
      * @param {string} params.createdAtTo - Đến ngày tạo (YYYY-MM-DD)
      * @param {number} params.page - Trang hiện tại (mặc định: 1)
@@ -34,7 +33,6 @@ class ShopService {
                 address,
                 phone,
                 email,
-                managerId,
                 status,
                 createdAtFrom,
                 createdAtTo,
@@ -87,14 +85,9 @@ class ShopService {
                 };
             }
 
-            // Tìm kiếm theo manager ID
-            if (managerId) {
-                whereConditions.managerId = managerId;
-            }
-
             // Tìm kiếm theo trạng thái
-            if (status && status.trim() && STATUS_VALUES.includes(status.trim().toLowerCase())) {
-                whereConditions.status = status.trim().toLowerCase();
+            if (status == SHOP_STATUS.ACTIVE || status == SHOP_STATUS.INACTIVE) {
+                whereConditions.status = status;
             }
 
             // Lọc theo khoảng thời gian tạo
@@ -152,7 +145,6 @@ class ShopService {
                     'address',
                     'phone',
                     'email',
-                    'managerId',
                     'status',
                     'created_at',
                     'updated_at'
@@ -199,7 +191,6 @@ class ShopService {
                         address,
                         phone,
                         email,
-                        managerId,
                         status,
                         createdAtFrom,
                         createdAtTo
@@ -231,7 +222,7 @@ class ShopService {
         try {
             const shops = await Shop.findAll({
                 where: {
-                    status: 'active'
+                    status: SHOP_STATUS.ACTIVE
                 },
                 include: [{
                     model: Company,
@@ -347,13 +338,12 @@ class ShopService {
      * @param {string} shopData.address - Địa chỉ
      * @param {string} shopData.phone - Số điện thoại
      * @param {string} shopData.email - Email
-     * @param {number} shopData.managerId - ID quản lý
      * @param {string} shopData.description - Mô tả
      * @returns {Object} Thông tin shop đã tạo
      */
     async createShop(shopData) {
         try {
-            const { code, name, companyId, address, phone, email, managerId, description } = shopData;
+            const { code, name, companyId, address, phone, email, description } = shopData;
 
             // Validate required fields
             if (!code || !code.trim()) {
@@ -417,8 +407,7 @@ class ShopService {
                 address: address?.trim() || null,
                 phone: phone?.trim() || null,
                 email: email?.trim() || null,
-                managerId: managerId || null,
-                status: 'active'
+                status: SHOP_STATUS.ACTIVE
             });
 
             const newShop = await Shop.create({
@@ -428,8 +417,7 @@ class ShopService {
                 address: address?.trim() || null,
                 phone: phone?.trim() || null,
                 email: email?.trim() || null,
-                managerId: managerId || null,
-                status: STATUS.ACTIVE
+                status: SHOP_STATUS.ACTIVE
             });
 
             console.log('ShopService.createShop - Created shop:', JSON.stringify(newShop.toJSON(), null, 2));
@@ -470,7 +458,7 @@ class ShopService {
      */
     async updateShop(id, shopData) {
         try {
-            const { code, name, companyId, address, phone, email, managerId, description, status } = shopData;
+            const { code, name, companyId, address, phone, email, description, status } = shopData;
 
             // Tìm shop cần cập nhật
             const shop = await Shop.findByPk(id);
@@ -515,10 +503,10 @@ class ShopService {
             }
 
             // Validate status nếu có
-            if (status && !STATUS_VALUES.includes(status)) {
+            if (status !== SHOP_STATUS.ACTIVE && status !== SHOP_STATUS.INACTIVE) {
                 return {
                     success: false,
-                    message: `Trạng thái phải là "${STATUS_VALUES.join('" hoặc "')}"`
+                    message: `Trạng thái phải là "${Object.values(SHOP_STATUS).join('" hoặc "')}"`
                 };
             }
 
@@ -554,12 +542,7 @@ class ShopService {
                 address: address?.trim() || null,
                 phone: phone?.trim() || null,
                 email: email?.trim() || null,
-                managerId: managerId || null
             };
-
-            if (status) {
-                updateData.status = status.toLowerCase();
-            }
 
             console.log('ShopService.updateShop - Updating with data:', updateData);
 
@@ -598,7 +581,7 @@ class ShopService {
     /**
      * Cập nhật trạng thái shop
      * @param {number} id - ID shop
-     * @param {string} status - Trạng thái mới ('active' hoặc 'inactive')
+     * @param {integer} status - Trạng thái mới (1: 'active', 0: 'inactive')
      * @returns {Object} Kết quả cập nhật
      */
     async updateShopStatus(id, status) {
@@ -614,13 +597,13 @@ class ShopService {
 
             // Cập nhật trạng thái
             await shop.update({
-                status: status.toLowerCase()
+                status: status
             });
 
             return {
                 success: true,
                 data: shop,
-                message: `Cập nhật trạng thái shop thành ${status === 'active' ? 'hoạt động' : 'ngừng hoạt động'} thành công`
+                message: `Cập nhật trạng thái shop thành ${status === SHOP_STATUS.ACTIVE ? 'hoạt động' : 'ngừng hoạt động'} thành công`
             };
 
         } catch (error) {

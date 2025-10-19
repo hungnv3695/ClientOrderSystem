@@ -3,7 +3,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const config = require('../config/app.config');
 const logger = require('../utils/logger');
-const { USER_ROLES, HTTP_STATUS } = require('../constants/app.constants');
+const { USER_ROLES, HTTP_STATUS, SHOP_STATUS, USER_STATUS } = require('../constants/app.constants');
+const { USER } = require('../config/db.config');
 
 exports.login = async (req, res) => {
     const { username, password, deviceCode, shopCode } = req.body || {};
@@ -31,15 +32,15 @@ exports.login = async (req, res) => {
         }
 
         // Find user with shops (tích hợp shopCode validation)
-        const whereConditions = { username, status: 'active' };
+        const whereConditions = { username, status: USER_STATUS.ACTIVE };
         const includeConditions = [{
             model: Shop,
             as: 'shops',
             through: {
                 attributes: ['status'],
-                where: { status: 'active' }
+                where: { status: SHOP_STATUS.ACTIVE }
             },
-            where: { status: 'active' }
+            where: { status: SHOP_STATUS.ACTIVE }
         }];
 
         // Nếu có shopCode, thêm điều kiện filter shop
@@ -68,7 +69,7 @@ exports.login = async (req, res) => {
         }
 
         // Check if user status is active (redundant nhưng giữ lại cho safety)
-        if (user.status !== 'active') {
+        if (user.status !== USER_STATUS.ACTIVE) {
             logger.logAuthEvent('login_failed', {
                 username,
                 deviceCode,
@@ -81,7 +82,7 @@ exports.login = async (req, res) => {
         }
 
         // Verify password
-        const ok = await bcrypt.compare(password, user.passwordHash);
+        const ok = await bcrypt.compare(password, user.password);
         if (!ok) {
             logger.logAuthEvent('login_failed', {
                 username,
@@ -137,8 +138,8 @@ exports.login = async (req, res) => {
                 message: 'User không có quyền sử dụng thiết bị này' 
             });
         }
-        
-        const shop = await Shop.findOne({ where: { code: shopCode, status: 'active' } });
+
+        const shop = await Shop.findOne({ where: { code: shopCode, status: SHOP_STATUS.ACTIVE } });
 
         // Success - create token
         const payload = {
@@ -157,11 +158,11 @@ exports.login = async (req, res) => {
         let deviceInfo = null;
         let printerDevice = null;
         
-        // Lấy tất cả devices của user
+        // Lấy tất cả devices của user (status: 1 = using)
         const userDevices = await Device.findAll({
             where: { 
                 userId: user.id,
-                status: 'used'
+                status: 1
             },
             include: [{
                 model: DeviceType,
@@ -175,8 +176,8 @@ exports.login = async (req, res) => {
             deviceInfo = userDevices.find(d => d.code === deviceCode);
         }
 
-        // Tìm máy in (type PRT)
-        printerDevice = userDevices.find(d => d.type === 'PRT');
+        // Tìm máy in (deviceType.code === 'PRT')
+        printerDevice = userDevices.find(d => d.deviceType && d.deviceType.code === 'PRT');
 
         // Nếu không có deviceCode cụ thể, dùng device đầu tiên
         if (!deviceInfo && userDevices.length > 0) {
@@ -196,7 +197,7 @@ exports.login = async (req, res) => {
                 port: printerDevice.port,
                 brand: printerDevice.brand,
                 serialNumber: printerDevice.serialNumber,
-                type: printerDevice.type,
+                type: printerDevice.deviceType?.code,
                 deviceType: printerDevice.deviceType
             };
         }

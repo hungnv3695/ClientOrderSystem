@@ -1,41 +1,61 @@
 module.exports = (sequelize, DataTypes) => {
     const UserShop = sequelize.define('UserShop', {
-        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-        userId: { type: DataTypes.INTEGER, allowNull: false, field: 'user_id' },
-        shopId: { type: DataTypes.INTEGER, allowNull: false, field: 'shop_id' },
+        id: { 
+            type: DataTypes.INTEGER, 
+            primaryKey: true, 
+            autoIncrement: true,
+            allowNull: false
+        },
+        userId: { 
+            type: DataTypes.INTEGER, 
+            allowNull: true, 
+            field: 'user_id' 
+        },
+        shopId: { 
+            type: DataTypes.INTEGER, 
+            allowNull: true, 
+            field: 'shop_id' 
+        },
         status: {
-            type: DataTypes.ENUM('active', 'inactive'),
+            type: DataTypes.INTEGER,
             allowNull: false,
-            defaultValue: 'active'
+            defaultValue: 1,
         },
         assignedAt: {
-            type: DataTypes.DATE,
-            allowNull: false,
-            defaultValue: DataTypes.NOW,
+            type: DataTypes.STRING(14), // yyyyMMddHHmmss format (14 chars)
+            allowNull: true,
             field: 'assigned_at'
-        }
+        },
+        createdCd: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            field: 'created_cd',
+        },
+        updatedCd: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+            field: 'updated_cd',
+        },
     }, {
-        tableName: 'user_shop',
+        tableName: 't_user_shop',
         underscored: true,
         timestamps: true,
         indexes: [
-            { unique: true, fields: ['user_id', 'shop_id'] }, // Prevent duplicate assignments
+            { unique: true, fields: ['user_id', 'shop_id'] },
             { fields: ['user_id'] },
             { fields: ['shop_id'] },
             { fields: ['status'] }
-        ]
+        ],
+        hooks: {
+            beforeCreate: (userShop, options) => {
+                userShop.createdCd = options.userId || 'SYSTEM';
+                userShop.updatedCd = options.userId || 'SYSTEM';
+            },
+            beforeUpdate: (userShop, options) => {
+                userShop.updatedCd = options.userId || 'SYSTEM';
+            }
+        }
     });
-
-    UserShop.associate = function(models) {
-        UserShop.belongsTo(models.User, {
-            foreignKey: 'userId',
-            as: 'user'
-        });
-        UserShop.belongsTo(models.Shop, {
-            foreignKey: 'shopId', 
-            as: 'shop'
-        });
-    };
 
     return UserShop;
 };

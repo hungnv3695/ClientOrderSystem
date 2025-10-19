@@ -1,4 +1,5 @@
 const { Menu, Food } = require('../database');
+const { FOOD_STATUS } = require('../constants/app.constants');
 
 // Lấy menu theo id kèm foods
 async function getMenu(id) {
@@ -9,8 +10,8 @@ async function getMenu(id) {
                 model: Food,
                 as: 'food',
                 through: { attributes: [] }, // ẩn cột từ bảng trung gian
-                where: { isActive: true }, // bật nếu chỉ muốn món đang active
-                attributes: ['id', 'name', 'price', 'description', 'image', 'isActive'],
+                where: { status: FOOD_STATUS.ACTIVE }, // chỉ lấy món đang active (1 = active)
+                attributes: ['id', 'name', 'price', 'description', 'image', 'status'],
             },
         ],
         order: [

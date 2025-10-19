@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const { formatDateTime } = require('../../utils/dateTimeUtils.js');
 
 async function seedInitialData(models) {
     const {
@@ -19,11 +20,16 @@ async function seedInitialData(models) {
             const t = await sequelize.transaction();
             try {
                 const foods = [
-                    { name: 'Bánh mì', price: 20000, description: 'Bánh mì thịt truyền thống', image: 'banh-mi.jpg', isActive: true },
-                    { name: 'Cà phê đen', price: 15000, description: 'Cà phê đen đậm đà', image: 'ca-phe-den.jpg', isActive: true },
-                    { name: 'Cà phê sữa đá', price: 18000, description: 'Cà phê sữa đá thơm ngon', image: 'ca-phe-sua-da.jpg', isActive: true },
-                    { name: 'Trà đá', price: 5000, description: 'Trà đá mát lạnh', image: 'tra-da.jpg', isActive: true },
-                    { name: 'Nước sấu', price: 12000, description: 'Nước sấu Hà Nội', image: 'nuoc-sau.jpg', isActive: true },
+                    { name: 'Bánh mì', price: 20000, description: 'Bánh mì thịt truyền thống', image: 'banh-mi.jpg', status: 1 },
+                    { name: 'Cà phê đen', price: 15000, description: 'Cà phê đen đậm đà', image: 'ca-phe-den.jpg', status: 1 },
+                    { name: 'Cà phê sữa đá', price: 18000, description: 'Cà phê sữa đá thơm ngon', image: 'ca-phe-sua-da.jpg', status: 1 },
+                    { name: 'Trà đá', price: 5000, description: 'Trà đá mát lạnh', image: 'tra-da.jpg', status: 1 },
+                    { name: 'Nước sấu', price: 12000, description: 'Nước sấu Hà Nội', image: 'nuoc-sau.jpg', status: 1 },
+                    { name: 'Bún chả', price: 35000, description: 'Bún chả Hà Nội truyền thống', image: 'bun-cha.jpg', status: 1 },
+                    { name: 'Phở bò', price: 40000, description: 'Phở bò tái chín', image: 'pho-bo.jpg', status: 1 },
+                    { name: 'Bánh cuốn', price: 25000, description: 'Bánh cuốn nóng chấm nước mắm', image: 'banh-cuon.jpg', status: 1 },
+                    { name: 'Chả cá Lã Vọng', price: 45000, description: 'Chả cá Lã Vọng với bún tươi', image: 'cha-ca.jpg', status: 1 },
+                    { name: 'Bắp xào bơ', price: 22000, description: 'Bắp xào bơ thơm ngon', image: 'bap-xao-bo.jpg', status: 1 }
                 ];
 
                 const menus = [
@@ -38,6 +44,11 @@ async function seedInitialData(models) {
                     { menuId: createdMenus[0].id, foodId: createdFoods[0].id },
                     { menuId: createdMenus[0].id, foodId: createdFoods[1].id },
                     { menuId: createdMenus[0].id, foodId: createdFoods[3].id },
+                    { menuId: createdMenus[0].id, foodId: createdFoods[4].id },
+                    { menuId: createdMenus[0].id, foodId: createdFoods[5].id },
+                    { menuId: createdMenus[0].id, foodId: createdFoods[6].id },
+                    { menuId: createdMenus[0].id, foodId: createdFoods[7].id },
+                    { menuId: createdMenus[0].id, foodId: createdFoods[8].id },
                     { menuId: createdMenus[1].id, foodId: createdFoods[0].id },
                     { menuId: createdMenus[1].id, foodId: createdFoods[2].id },
                     { menuId: createdMenus[1].id, foodId: createdFoods[4].id },
@@ -67,7 +78,9 @@ async function seedInitialData(models) {
                     email: 'info@hungbakerycoffee.com',
                     website: 'https://hungbakerycoffee.com',
                     description: 'Chuỗi cà phê và bánh ngọt cao cấp',
-                    status: 'active'
+                    status: 1, // INTEGER: 1=active, 0=inactive
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 }
             });
             defaultCompany = company;
@@ -85,12 +98,14 @@ async function seedInitialData(models) {
                 where: { username: 'manager' },
                 defaults: {
                     username: 'manager',
-                    passwordHash: hash,
+                    password: hash,
                     role: 'manager',
                     code: 'MGR001',
                     email: 'manager@company.com',
-                    status: 'active',
-                    companyId: defaultCompany.id
+                    status: 1,
+                    companyId: defaultCompany.id,
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 },
             });
 
@@ -98,12 +113,14 @@ async function seedInitialData(models) {
                 where: { username: 'staff' },
                 defaults: {
                     username: 'staff',
-                    passwordHash: hash,
+                    password: hash,
                     role: 'staff',
                     code: 'STF001',
                     email: 'staff@company.com',
-                    status: 'active',
-                    companyId: defaultCompany.id
+                    status: 1,
+                    companyId: defaultCompany.id,
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 },
             });
 
@@ -111,12 +128,14 @@ async function seedInitialData(models) {
                 where: { username: 'device' },
                 defaults: {
                     username: 'device',
-                    passwordHash: hash,
+                    password: hash,
                     role: 'device',
                     code: 'DEV001',
                     email: 'device@company.com',
-                    status: 'active',
-                    companyId: defaultCompany.id
+                    status: 1,
+                    companyId: defaultCompany.id,
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 },
             });
 
@@ -139,10 +158,12 @@ async function seedInitialData(models) {
                     phone: '7085214356',
                     email: 'hung.dev95@gmail.com',
                     managerId: null, // Có thể set manager sau
-                    status: 'active',
+                    status: 1, // INTEGER: 1=active, 0=inactive
                     bankCode: 'VCB',
                     bankNumber: '0011004365510',
-                    bankNumberName: 'NGUYEN VIET HUNG'
+                    bankNumberName: 'NGUYEN VIET HUNG',
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 }
             });
 
@@ -158,8 +179,10 @@ async function seedInitialData(models) {
                     defaults: {
                         userId: deviceUser.id,
                         shopId: shop.id,
-                        status: 'active',
-                        assignedAt: new Date()
+                        status: 1,
+                        assignedAt: formatDateTime(new Date()),
+                        createdCd: 'SYSTEM',
+                        updatedCd: 'SYSTEM'
                     }
                 });
                 console.log('Device user shop assignment:', deviceAssigned ? 'created' : 'exists');
@@ -171,8 +194,10 @@ async function seedInitialData(models) {
                     defaults: {
                         userId: staffUser.id,
                         shopId: shop.id,
-                        status: 'active',
-                        assignedAt: new Date()
+                        status: 1,
+                        assignedAt: formatDateTime(new Date()),
+                        createdCd: 'SYSTEM',
+                        updatedCd: 'SYSTEM'
                     }
                 });
                 console.log('Staff user shop assignment:', staffAssigned ? 'created' : 'exists');
@@ -221,6 +246,15 @@ async function seedInitialData(models) {
 
             console.log('Using existing device user - ID:', existingDeviceUser.id, 'Username:', existingDeviceUser.username);
 
+            // Get device types
+            const printerType = await DeviceType.findOne({ where: { code: 'PRT' } });
+            const tabletType = await DeviceType.findOne({ where: { code: 'TBL' } });
+
+            if (!printerType || !tabletType) {
+                console.error('DeviceType not found. Please run DeviceType seed first.');
+                return;
+            }
+
             // Seed printer device
             const [printerDevice, printerDeviceCreated] = await Device.findOrCreate({
                 where: { code: 'PRT00001' },
@@ -231,10 +265,12 @@ async function seedInitialData(models) {
                     brand: 'EPSON',
                     ip: '192.168.11.9',
                     port: '80',
-                    type: 'PRT',
-                    status: 'used',
+                    typeId: printerType.id,
                     userId: existingDeviceUser.id,
-                    note: 'máy in hóa đơn số 1'
+                    status: 1,
+                    note: 'máy in hóa đơn số 1',
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 }
             });
 
@@ -248,10 +284,12 @@ async function seedInitialData(models) {
                     brand: 'Microsoft',
                     ip: '192.168.11.6',
                     port: '5173',
-                    type: 'TBL',
-                    status: 'used',
+                    typeId: tabletType.id,
                     userId: existingDeviceUser.id,
-                    note: 'máy tính bảng order số 1'
+                    status: 1,
+                    note: 'máy tính bảng order số 1',
+                    createdCd: 'SYSTEM',
+                    updatedCd: 'SYSTEM'
                 }
             });
 

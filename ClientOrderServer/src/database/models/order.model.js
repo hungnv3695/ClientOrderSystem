@@ -1,5 +1,4 @@
 // src/database/models/order.model.js
-const { ORDER_STATUS, PAYMENT_STATUS } = require('../../constants/order.constants');
 module.exports = (sequelize, DataTypes) => {
     const Order = sequelize.define(
         'Order',
@@ -15,17 +14,17 @@ module.exports = (sequelize, DataTypes) => {
                 unique: true,
                 field: 'order_number',
             },
-            // Received | Processing | Completed | Delivered | Cancelled
+            // Status: 0=Cancelled, 1=Received, 2=Processing, 3=Completed, 4=Delivered
             status: {
-                type: DataTypes.STRING(20),
+                type: DataTypes.INTEGER,
                 allowNull: false,
-                defaultValue: ORDER_STATUS.RECEIVED,
+                defaultValue: 1, // 1 = Received
             },
-            // Trạng thái thanh toán: Unpaid | Paid | Refunded
+            // Payment Status: 0=Unpaid, 1=Paid
             paymentStatus: {
-                type: DataTypes.STRING(20),
+                type: DataTypes.INTEGER,
                 allowNull: false,
-                defaultValue: PAYMENT_STATUS.UNPAID,
+                defaultValue: 0, // 0 = Unpaid
                 field: 'payment_status',
             },
             totalPrice: {
@@ -43,17 +42,38 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 field: 'shop_code',
             },
+            createdCd: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                field: 'created_cd',
+            },
+            updatedCd: {
+                type: DataTypes.DATE,
+                allowNull: false,
+                field: 'updated_cd',
+            },
         },
         {
-            tableName: 'order',
+            tableName: 't_order',
             timestamps: true,
             underscored: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
             indexes: [
                 { unique: true, fields: ['order_number'] },
                 { fields: ['shop_code'] },
                 { fields: ['status'] },
                 { fields: ['shop_code', 'status'] },
-            ]
+            ],
+            hooks: {
+                beforeCreate: (order, options) => {
+                    order.createdCd = options.userId || 'SYSTEM';
+                    order.updatedCd =  options.userId || 'SYSTEM';
+                },
+                beforeUpdate: (order, options) => {
+                    order.updatedCd = options.userId || 'SYSTEM';
+                }
+            }
         }
     );
 

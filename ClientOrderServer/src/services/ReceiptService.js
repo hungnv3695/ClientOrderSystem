@@ -1,6 +1,7 @@
 const { sequelize, Order, Food, Receipt, ReceiptItem, OrderFood } = require('../database');
 const { Op } = require('sequelize');
 const { PAYMENT_STATUS } = require('../constants/order.constants');
+const { formatDateTime } = require('../utils/dateTimeUtils.js');
 
 /**
  * Sinh số biên lai duy nhất: RC[yymmdd][seq4]
@@ -38,8 +39,8 @@ async function generateReceiptNumber(t) {
  * - Thử lại tối đa 5 lần nếu gặp lỗi trùng khóa duy nhất của receipt_number.
  *
  * @param {number} orderId Bắt buộc: ID của đơn hàng cần tạo biên lai
- * @param {{ paymentMethod?: 'cash'|'card'|'ewallet', paidAmount?: number, discountAmount?: number, taxAmount?: number, cashierId?: number, notes?: string }} [options]
- * @returns {Promise<{ items: Array<{ itemId:number, itemName:string, qty:number, unitPrice:number, totalPrice:number }>, [key:string]: any }>} Trả về object receipt (các field header) kèm thuộc tính items
+ * @param {{ paymentMethod?: number, paidAmount?: number, discountAmount?: number, taxAmount?: number, cashierId?: number, notes?: string }} [options]
+ * @returns {Promise<{ items: Array<{ itemId:number, itemName:string, quantity:number, unitPrice:number, totalPrice:number }>, [key:string]: any }>} Trả về object receipt (các field header) kèm thuộc tính items
  * @throws Lỗi khi không tìm thấy order, hoặc lỗi DB (đã rollback)
  */
 async function createReceiptByOrderId(orderId, options = {}) {
@@ -48,7 +49,7 @@ async function createReceiptByOrderId(orderId, options = {}) {
 
     // Tách và chuẩn hóa tham số với giá trị mặc định hợp lý
     const {
-        paymentMethod = 'cash', // phải thuộc enum đã định nghĩa trong model Receipt
+        paymentMethod = PAYMENT_METHOD.CASH, // INTEGER: 0=cash, 1=bank_transfer
         paidAmount: paidAmountInput,
         discountAmount: discountInput = 0,
         taxAmount: taxInput = 0,
@@ -80,7 +81,7 @@ async function createReceiptByOrderId(orderId, options = {}) {
                 return {
                     itemId: r.foodId,
                     itemName: nameMap.get(r.foodId) || `Item ${r.foodId}`,
-                    qty,
+                    quantity: qty,
                     unitPrice: unit,
                     totalPrice: qty * unit,
                 };
@@ -107,24 +108,24 @@ async function createReceiptByOrderId(orderId, options = {}) {
                 finalAmount,
                 paidAmount,
                 changeAmount,
-                paymentMethod,
-                paidAt: new Date(),
+                paymentMethod, // INTEGER: 0=cash, 1=bank_transfer
+                paidAt: formatDateTime(new Date()),
                 cashierId,
-                status: 'Paid',
-                notes,
-            }, { transaction: t });
+                status: 1, // INTEGER: 1=paid
+                note: notes,
+            }, { transaction: t, userId: cashierId });
 
             // 6) Lưu các dòng receipt_item hàng loạt
             if (items.length) {
                 const itemRows = items.map(it => ({
-                    receiptId: receipt.receiptId || receipt.id,
+                    receiptId: receipt.id,
                     itemId: it.itemId,
                     itemName: it.itemName,
-                    qty: it.qty,
+                    quantity: it.quantity,
                     unitPrice: it.unitPrice,
                     totalPrice: it.totalPrice,
                 }));
-                await ReceiptItem.bulkCreate(itemRows, { transaction: t });
+                await ReceiptItem.bulkCreate(itemRows, { transaction: t, userId: cashierId });
             }
 
             // 7) Cập nhật paymentStatus của Order thành PAID

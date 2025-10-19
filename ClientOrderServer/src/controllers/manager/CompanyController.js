@@ -1,4 +1,5 @@
 // controllers/manager/CompanyController.js
+const { COMPANY_STATUS } = require('../../constants/app.constants');
 const CompanyService = require('../../services/manager/CompanyService');
 const logger = require('../../utils/logger');
 
@@ -36,7 +37,7 @@ class CompanyController {
                 address: address?.trim() || '',
                 phone: phone?.trim() || '',
                 email: email?.trim() || '',
-                status: status?.trim() || '',
+                status: parseInt(status) || -1,
                 createdAtFrom: createdAtFrom || '',
                 createdAtTo: createdAtTo || '',
                 page: parseInt(page) || 1,
@@ -399,7 +400,7 @@ class CompanyController {
             }
 
             // Validate status
-            if (!status || !['active', 'inactive'].includes(status)) {
+            if (status !== COMPANY_STATUS.ACTIVE && status !== COMPANY_STATUS.INACTIVE) {
                 logger.logOrderEvent('company_status_update_failed', {
                     companyId,
                     reason: 'invalid_status',

@@ -9,7 +9,7 @@ module.exports = (sequelize, DataTypes) => {
                 primaryKey: true,
             },
             name: {
-                type: DataTypes.STRING(200),
+                type: DataTypes.STRING(100),
                 allowNull: false,
             },
             price: {
@@ -25,16 +25,35 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.STRING(255),
                 allowNull: true,
             },
-            isActive: {
-                type: DataTypes.BOOLEAN,
+            status: {
+                type: DataTypes.INTEGER,
                 allowNull: false,
-                defaultValue: true,
+                defaultValue: 1, // 1 = active, 0 = inactive
+            },
+            createdCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                field: 'created_cd',
+            },
+            updatedCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                field: 'updated_cd',
             },
         },
         {
-            tableName: 'food',
+            tableName: 'm_food',
             timestamps: true,
             underscored: true,
+            hooks: {
+                beforeCreate: (food, options) => {
+                    food.createdCd = options.userId || 'SYSTEM';
+                    food.updatedCd = options.userId || 'SYSTEM';
+                },
+                beforeUpdate: (food, options) => {
+                    food.updatedCd = options.userId || 'SYSTEM';
+                }
+            }
         }
     );
 

@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
             },
             name: {
-                type: DataTypes.STRING(255),
+                type: DataTypes.STRING(100),
                 allowNull: false,
             },
             registration_number: {
@@ -29,11 +29,11 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
             email: {
-                type: DataTypes.STRING(255),
+                type: DataTypes.STRING(100),
                 allowNull: true,
             },
             website: {
-                type: DataTypes.STRING(255),
+                type: DataTypes.STRING(100),
                 allowNull: true,
             },
             description: {
@@ -41,13 +41,23 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: true,
             },
             status: {
-                type: DataTypes.ENUM('active', 'inactive'),
+                type: DataTypes.INTEGER,
                 allowNull: false,
-                defaultValue: 'active'
+                defaultValue: 1,
+            },
+            createdCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                fields: 'created_cd'
+            },
+            updatedCd: {
+                type: DataTypes.STRING(50),
+                allowNull: false,
+                field: 'updated_cd'
             },
         },
         {
-            tableName: 'company',
+            tableName: 'm_company',
             timestamps: true,
             underscored: true,
             createdAt: 'created_at',
@@ -57,6 +67,15 @@ module.exports = (sequelize, DataTypes) => {
                 { fields: ['registration_number'] },
                 { fields: ['status'] },
             ],
+            hooks: {
+                beforeCreate: (company, options) => {
+                    company.createdCd = options.userId || 'SYSTEM';
+                    company.updatedCd =  options.userId || 'SYSTEM';
+                },
+                beforeUpdate: (company, options) => {
+                    company.updatedCd = options.userId || 'SYSTEM';
+                }
+            }
         }
     );
 
