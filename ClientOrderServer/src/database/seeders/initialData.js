@@ -234,17 +234,21 @@ async function seedInitialData(models) {
 
         // Seed Device data
         try {
-            // Sử dụng user device có sẵn (username: 'device', id: 3)
-            const existingDeviceUser = await User.findOne({
+            // Get users
+            const deviceUser = await User.findOne({
                 where: { username: 'device', role: 'device' }
             });
 
-            if (!existingDeviceUser) {
-                console.log('Device user not found, please ensure device user exists');
+            const staffUser = await User.findOne({
+                where: { username: 'staff', role: 'staff' }
+            });
+
+            if (!deviceUser) {
+                console.log('Device user not found, skipping device seed');
                 return;
             }
 
-            console.log('Using existing device user - ID:', existingDeviceUser.id, 'Username:', existingDeviceUser.username);
+            console.log('Found users => Device User ID:', deviceUser.id, ', Staff User ID:', staffUser?.id);
 
             // Get device types
             const printerType = await DeviceType.findOne({ where: { code: 'PRT' } });
@@ -255,7 +259,7 @@ async function seedInitialData(models) {
                 return;
             }
 
-            // Seed printer device
+            // Seed printer device (assigned to device user)
             const [printerDevice, printerDeviceCreated] = await Device.findOrCreate({
                 where: { code: 'PRT00001' },
                 defaults: {
@@ -266,35 +270,79 @@ async function seedInitialData(models) {
                     ip: '192.168.11.9',
                     port: '80',
                     typeId: printerType.id,
-                    userId: existingDeviceUser.id,
-                    status: 1,
-                    note: 'máy in hóa đơn số 1',
+                    userId: deviceUser.id,
+                    status: 1, // DEVICE_STATUS.USING
+                    note: 'Main receipt printer',
                     createdCd: 'SYSTEM',
                     updatedCd: 'SYSTEM'
                 }
             });
 
-            // Seed tablet device
-            const [tabletDevice, tabletDeviceCreated] = await Device.findOrCreate({
+            // Seed tablet device for order-taking (assigned to device user)
+            const [orderTabletDevice, orderTabletCreated] = await Device.findOrCreate({
                 where: { code: 'KSK001' },
                 defaults: {
                     code: 'KSK001',
-                    name: 'Surface pro 5',
+                    name: 'Surface Pro 5',
                     serialNumber: 'SN00000012',
                     brand: 'Microsoft',
                     ip: '192.168.11.6',
                     port: '5173',
                     typeId: tabletType.id,
-                    userId: existingDeviceUser.id,
-                    status: 1,
-                    note: 'máy tính bảng order số 1',
+                    userId: deviceUser.id,
+                    status: 1, // DEVICE_STATUS.USING
+                    note: 'Main order tablet',
                     createdCd: 'SYSTEM',
                     updatedCd: 'SYSTEM'
                 }
             });
 
-            console.log('Device seed status => printer device:', printerDeviceCreated ? 'created' : 'exists',
-                ', tablet device:', tabletDeviceCreated ? 'created' : 'exists');
+            console.log('Device seed (device user) => printer:', printerDeviceCreated ? 'created' : 'exists',
+                ', order tablet:', orderTabletCreated ? 'created' : 'exists');
+
+            // Seed staff devices (assigned to staff user)
+            if (staffUser) {
+                const [staffTablet, staffTabletCreated] = await Device.findOrCreate({
+                    where: { code: 'KSK002' },
+                    defaults: {
+                        code: 'KSK002',
+                        name: 'Samsung Galaxy Tab',
+                        serialNumber: 'SN00000020',
+                        brand: 'Samsung',
+                        ip: '192.168.11.20',
+                        port: '3000',
+                        typeId: tabletType.id,
+                        userId: staffUser.id,
+                        status: 1, // DEVICE_STATUS.USING
+                        note: 'Staff tablet',
+                        createdCd: 'SYSTEM',
+                        updatedCd: 'SYSTEM'
+                    }
+                });
+
+                const [staffPrinter, staffPrinterCreated] = await Device.findOrCreate({
+                    where: { code: 'PRT002' },
+                    defaults: {
+                        code: 'PRT002',
+                        name: 'Epson TM-T82',
+                        serialNumber: 'SN00000021',
+                        brand: 'EPSON',
+                        ip: '192.168.11.9',
+                        port: '80',
+                        typeId: printerType.id,
+                        userId: staffUser.id,
+                        status: 1, // DEVICE_STATUS.USING
+                        note: 'Staff printer',
+                        createdCd: 'SYSTEM',
+                        updatedCd: 'SYSTEM'
+                    }
+                });
+
+                console.log('Device seed (staff user) => tablet:', staffTabletCreated ? 'created' : 'exists',
+                    ', printer:', staffPrinterCreated ? 'created' : 'exists');
+            } else {
+                console.log('Staff user not found, skipping staff device seed');
+            }
         } catch (dErr) {
             console.error('Device seed failed:', dErr);
         }

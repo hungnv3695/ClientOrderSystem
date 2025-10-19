@@ -1,6 +1,6 @@
 const { sequelize, Order, Food, Receipt, ReceiptItem, OrderFood } = require('../database');
 const { Op } = require('sequelize');
-const { PAYMENT_STATUS } = require('../constants/order.constants');
+const { PAYMENT_STATUS, PAYMENT_METHOD } = require('../constants/order.constants');
 const { formatDateTime } = require('../utils/dateTimeUtils.js');
 
 /**
@@ -124,8 +124,9 @@ async function createReceiptByOrderId(orderId, options = {}) {
                     quantity: it.quantity,
                     unitPrice: it.unitPrice,
                     totalPrice: it.totalPrice,
+                    createdCd: cashierId || 'SYSTEM',
                 }));
-                await ReceiptItem.bulkCreate(itemRows, { transaction: t, userId: cashierId });
+                await ReceiptItem.bulkCreate(itemRows, { transaction: t });
             }
 
             // 7) Cập nhật paymentStatus của Order thành PAID

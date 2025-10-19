@@ -32,11 +32,13 @@ module.exports = (sequelize, DataTypes) => {
             createdCd: {
                 type: DataTypes.STRING(50),
                 allowNull: false,
+                defaultValue: 'SYSTEM',
                 field: 'created_cd',
             },
             updatedCd: {
                 type: DataTypes.STRING(50),
                 allowNull: false,
+                defaultValue: 'SYSTEM',
                 field: 'updated_cd',
             },
         },

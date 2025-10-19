@@ -38,6 +38,7 @@ module.exports = (sequelize, DataTypes) => {
         createdCd: {
             type: DataTypes.STRING(50),
             allowNull: false,
+            defaultValue: 'SYSTEM',
             field: 'created_cd',
         },
     }, {

@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const config = require('../config/app.config');
 const logger = require('../utils/logger');
 const { USER_ROLES, HTTP_STATUS, SHOP_STATUS, USER_STATUS } = require('../constants/app.constants');
+const { DEVICE_STATUS } = require('../constants/device.constants');
 const { USER } = require('../config/db.config');
 
 exports.login = async (req, res) => {
@@ -115,7 +116,7 @@ exports.login = async (req, res) => {
             where: { 
                 code: deviceCode,
                 userId: user.id,
-                status: 'used'
+                status: DEVICE_STATUS.USING // INTEGER: 1 = using
             },
             include: [{
                 model: DeviceType,
@@ -162,7 +163,7 @@ exports.login = async (req, res) => {
         const userDevices = await Device.findAll({
             where: { 
                 userId: user.id,
-                status: 1
+                status: DEVICE_STATUS.USING // INTEGER: 1 = using
             },
             include: [{
                 model: DeviceType,

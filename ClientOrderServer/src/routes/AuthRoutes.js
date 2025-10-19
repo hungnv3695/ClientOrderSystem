@@ -3,6 +3,8 @@ const router = express.Router();
 const { login, profile } = require('../controllers/AuthController');
 const { verifyToken } = require('../middlewares/auth');
 
+// API Documentation: See docs/swagger/auth.yaml
+
 router.post('/login', login);
 router.get('/profile', verifyToken, profile); // UNUSED - Not used in frontend
 

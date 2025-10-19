@@ -71,6 +71,8 @@ async function createOrders(orderData) {
                 foodId: i.foodId,
                 quantity: i.quantity || 1,
                 unitPrice: priceMap.get(i.foodId) || 0,
+                createdCd: orderData.userId || orderData.deviceCode || 'SYSTEM',
+                updatedCd: orderData.userId || orderData.deviceCode || 'SYSTEM',
             }));
             // Nếu có món thì thêm vào bảng trung gian
             if (rows.length) {
@@ -109,7 +111,10 @@ async function getOrdersByStatus(shopCode = null) {
             ORDER_STATUS.COMPLETED, 
             ORDER_STATUS.DELIVERED] },
         paymentStatus: PAYMENT_STATUS.PAID, // Chỉ lấy đơn đã thanh toán
-        createdAt: { [Op.between]: [startOfDay, endOfDay] },
+        [Op.and]: sequelize.where(
+            sequelize.col('Order.created_at'),
+            { [Op.between]: [startOfDay, endOfDay] }
+        ),
     };
 
     // Thêm filter theo shopCode nếu được cung cấp

@@ -27,6 +27,13 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0, // 0 = Unpaid
                 field: 'payment_status',
             },
+            // Payment Method: 0=Cash, 1=Bank Transfer
+            paymentMethod: {
+                type: DataTypes.INTEGER,
+                allowNull: false,
+                defaultValue: 0, // 0 = Cash
+                field: 'payment_method',
+            },
             totalPrice: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
@@ -43,13 +50,15 @@ module.exports = (sequelize, DataTypes) => {
                 field: 'shop_code',
             },
             createdCd: {
-                type: DataTypes.DATE,
+                type: DataTypes.STRING(50),
                 allowNull: false,
+                defaultValue: 'SYSTEM',
                 field: 'created_cd',
             },
             updatedCd: {
-                type: DataTypes.DATE,
+                type: DataTypes.STRING(50),
                 allowNull: false,
+                defaultValue: 'SYSTEM',
                 field: 'updated_cd',
             },
         },

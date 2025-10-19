@@ -72,9 +72,8 @@ DeviceType.hasMany(Device, { foreignKey: 'type_id', as: 'devices' });
 Device.belongsTo(DeviceType, { foreignKey: 'type_id', as: 'deviceType' });
 
 // Keep seeding for menu/food only
-// TEMPORARY: Using force: true to drop and recreate all tables
-sequelize.sync({ force: true }).then(async () => {
-    console.log('Database synchronized with force: true - All tables recreated');
+sequelize.sync({ alter: true }).then(async () => {
+    console.log('Database synchronized');
     
     // Pass all models to the seed function
     const models = {
