@@ -1,0 +1,360 @@
+openapi: 3.0.0
+paths:
+  /api/receipts/{orderId}:
+    post:
+      tags:
+        - Receipts
+      summary: Tạo biên lai thanh toán cho đơn hàng
+      description: |
+        Tạo biên lai (receipt) cho một đơn hàng đã tồn tại. 
+        
+        **Quy trình:**
+        - Khóa bản ghi Order để tránh xung đột
+        - Tải danh sách món từ OrderFood và Food
+        - Tính toán: totalAmount, discountAmount, taxAmount, finalAmount, paidAmount, changeAmount
+        - Sinh số biên lai duy nhất (RC[yymmdd][seq4])
+        - Ghi bản ghi receipt header và các dòng receipt_item
+        - Cập nhật paymentStatus của Order thành PAID (1)
+        
+        **Retry Policy:** Tự động retry tối đa 5 lần nếu trùng số biên lai.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: ID của đơn hàng cần tạo biên lai
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        description: Thông tin thanh toán (tất cả các field đều optional)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentMethod:
+                  type: integer
+                  description: |
+                    Phương thức thanh toán (INTEGER)
+                    - 0: Tiền mặt (CASH)
+                    - 1: Chuyển khoản (BANK_TRANSFER)
+                  enum: [0, 1]
+                  default: 0
+                  example: 0
+                paidAmount:
+                  type: number
+                  description: Số tiền khách đã trả. Nếu không truyền, mặc định = finalAmount (thanh toán đủ)
+                  example: 100000
+                discountAmount:
+                  type: number
+                  description: Số tiền giảm giá
+                  default: 0
+                  example: 5000
+                taxAmount:
+                  type: number
+                  description: Số tiền thuế
+                  default: 0
+                  example: 9500
+                cashierId:
+                  type: integer
+                  description: ID của nhân viên thu ngân (nullable)
+                  nullable: true
+                  example: 5
+                notes:
+                  type: string
+                  description: Ghi chú thêm cho biên lai
+                  nullable: true
+                  example: "Khách hàng yêu cầu in hóa đơn đỏ"
+            examples:
+              cashPayment:
+                summary: Thanh toán tiền mặt
+                value:
+                  paymentMethod: 0
+                  paidAmount: 150000
+                  discountAmount: 5000
+                  taxAmount: 13500
+                  cashierId: 10
+                  notes: "Khách thanh toán đủ"
+              bankTransfer:
+                summary: Chuyển khoản
+                value:
+                  paymentMethod: 1
+                  paidAmount: 200000
+                  cashierId: 10
+              minimal:
+                summary: Thanh toán tối giản (chỉ cần orderId)
+                value: {}
+      responses:
+        '200':
+          description: Tạo biên lai thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: ID của biên lai
+                        example: 456
+                      orderId:
+                        type: integer
+                        description: ID của đơn hàng
+                        example: 123
+                      receiptNumber:
+                        type: string
+                        description: Số biên lai duy nhất (RC[yymmdd][seq4])
+                        example: "RC2510230001"
+                      totalAmount:
+                        type: number
+                        description: Tổng tiền trước giảm giá và thuế
+                        example: 95000
+                      discountAmount:
+                        type: number
+                        description: Số tiền giảm giá
+                        example: 5000
+                      taxAmount:
+                        type: number
+                        description: Số tiền thuế
+                        example: 9000
+                      finalAmount:
+                        type: number
+                        description: Tổng tiền cuối cùng (totalAmount - discountAmount + taxAmount)
+                        example: 99000
+                      paidAmount:
+                        type: number
+                        description: Số tiền khách đã trả
+                        example: 100000
+                      changeAmount:
+                        type: number
+                        description: Tiền thừa trả lại khách
+                        example: 1000
+                      paymentMethod:
+                        type: integer
+                        description: Phương thức thanh toán (0=cash, 1=bank_transfer)
+                        example: 0
+                      paidAt:
+                        type: string
+                        format: date-time
+                        description: Thời điểm thanh toán (formatted)
+                        example: "2025-10-23 14:30:25"
+                      cashierId:
+                        type: integer
+                        nullable: true
+                        description: ID của nhân viên thu ngân
+                        example: 10
+                      status:
+                        type: integer
+                        description: Trạng thái biên lai (1=paid)
+                        example: 1
+                      note:
+                        type: string
+                        nullable: true
+                        description: Ghi chú
+                        example: "Khách thanh toán đủ"
+                      items:
+                        type: array
+                        description: Danh sách món ăn trong biên lai
+                        items:
+                          type: object
+                          properties:
+                            itemId:
+                              type: integer
+                              description: ID của món ăn
+                              example: 7
+                            itemName:
+                              type: string
+                              description: Tên món ăn
+                              example: "Cà phê sữa đá"
+                            quantity:
+                              type: integer
+                              description: Số lượng
+                              example: 2
+                            unitPrice:
+                              type: number
+                              description: Đơn giá
+                              example: 20000
+                            totalPrice:
+                              type: number
+                              description: Thành tiền (quantity * unitPrice)
+                              example: 40000
+                      createdAt:
+                        type: string
+                        format: date-time
+                        description: Thời gian tạo bản ghi
+                        example: "2025-10-23T07:30:25.123Z"
+                      updatedAt:
+                        type: string
+                        format: date-time
+                        description: Thời gian cập nhật bản ghi
+                        example: "2025-10-23T07:30:25.123Z"
+              examples:
+                successResponse:
+                  summary: Ví dụ response thành công
+                  value:
+                    success: true
+                    data:
+                      id: 456
+                      orderId: 123
+                      receiptNumber: "RC2510230001"
+                      totalAmount: 95000
+                      discountAmount: 5000
+                      taxAmount: 9000
+                      finalAmount: 99000
+                      paidAmount: 100000
+                      changeAmount: 1000
+                      paymentMethod: 0
+                      paidAt: "2025-10-23 14:30:25"
+                      cashierId: 10
+                      status: 1
+                      note: "Khách thanh toán đủ"
+                      items:
+                        - itemId: 7
+                          itemName: "Cà phê sữa đá"
+                          quantity: 2
+                          unitPrice: 20000
+                          totalPrice: 40000
+                        - itemId: 8
+                          itemName: "Bánh mì"
+                          quantity: 1
+                          unitPrice: 15000
+                          totalPrice: 15000
+                      createdAt: "2025-10-23T07:30:25.123Z"
+                      updatedAt: "2025-10-23T07:30:25.123Z"
+        '400':
+          description: Lỗi request không hợp lệ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Order not found"
+              examples:
+                missingOrderId:
+                  summary: Thiếu orderId
+                  value:
+                    success: false
+                    message: "Missing orderId"
+                orderNotFound:
+                  summary: Không tìm thấy đơn hàng
+                  value:
+                    success: false
+                    message: "Order not found"
+                createFailed:
+                  summary: Tạo biên lai thất bại
+                  value:
+                    success: false
+                    message: "Create receipt failed"
+        '401':
+          description: Không có token hoặc token không hợp lệ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Unauthorized"
+        '403':
+          description: Không có quyền truy cập (role không phù hợp)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Forbidden: Insufficient permissions"
+
+components:
+  schemas:
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID của biên lai
+        orderId:
+          type: integer
+          description: ID của đơn hàng
+        receiptNumber:
+          type: string
+          description: Số biên lai duy nhất (RC[yymmdd][seq4])
+        totalAmount:
+          type: number
+          description: Tổng tiền trước giảm giá và thuế
+        discountAmount:
+          type: number
+          description: Số tiền giảm giá
+        taxAmount:
+          type: number
+          description: Số tiền thuế
+        finalAmount:
+          type: number
+          description: Tổng tiền cuối cùng
+        paidAmount:
+          type: number
+          description: Số tiền khách đã trả
+        changeAmount:
+          type: number
+          description: Tiền thừa trả lại khách
+        paymentMethod:
+          type: integer
+          description: Phương thức thanh toán (0=cash, 1=bank_transfer)
+        paidAt:
+          type: string
+          format: date-time
+          description: Thời điểm thanh toán
+        cashierId:
+          type: integer
+          nullable: true
+          description: ID của nhân viên thu ngân
+        status:
+          type: integer
+          description: Trạng thái biên lai (1=paid)
+        note:
+          type: string
+          nullable: true
+          description: Ghi chú
+        items:
+          type: array
+          description: Danh sách món ăn trong biên lai
+          items:
+            $ref: '#/components/schemas/ReceiptItem'
+    
+    ReceiptItem:
+      type: object
+      properties:
+        itemId:
+          type: integer
+          description: ID của món ăn
+        itemName:
+          type: string
+          description: Tên món ăn
+        quantity:
+          type: integer
+          description: Số lượng
+        unitPrice:
+          type: number
+          description: Đơn giá
+        totalPrice:
+          type: number
+          description: Thành tiền (quantity * unitPrice)

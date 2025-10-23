@@ -1,0 +1,310 @@
+openapi: 3.0.0
+paths:
+  /api/sepay/receivePayment:
+    post:
+      tags:
+        - Payment
+      summary: Webhook nhận thông báo thanh toán từ Sepay
+      description: |
+        Endpoint webhook để nhận thông báo khi có giao dịch chuyển khoản qua Sepay gateway.
+        
+        **Quy trình xử lý:**
+        1. **Idempotency Check**: Kiểm tra transaction đã được xử lý chưa (theo `id` hoặc `referenceCode`)
+        2. **Lưu transaction**: Ghi vào bảng `payment_transaction`
+        3. **Tìm order**: Tìm đơn hàng theo `orderNumber` trong `content`
+        4. **Xác minh số tiền**: So sánh `transferAmount` với `order.totalPrice`
+        5. **Cập nhật order**: Nếu đủ tiền, cập nhật `paymentStatus = PAID (1)`
+        6. **Emit socket**: Gửi cập nhật realtime đến các client
+        
+        **Idempotency:** 
+        - Webhook có thể được gọi nhiều lần cho cùng 1 giao dịch
+        - Hệ thống tự động phát hiện và bỏ qua duplicate
+        - Luôn trả về `success: true` để Sepay không retry
+        
+        **Lưu ý:**
+        - Endpoint này không yêu cầu authentication (public webhook)
+        - Sepay gọi endpoint này khi phát hiện chuyển khoản
+        - Content của chuyển khoản phải chứa `orderNumber` để map với đơn hàng
+      requestBody:
+        required: true
+        description: Payload từ Sepay webhook
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+                - gateway
+                - transactionDate
+                - accountNumber
+                - transferAmount
+                - content
+              properties:
+                id:
+                  type: integer
+                  description: ID giao dịch từ Sepay (unique)
+                  example: 123456789
+                gateway:
+                  type: string
+                  description: Tên cổng thanh toán
+                  example: "MB"
+                transactionDate:
+                  type: string
+                  format: date-time
+                  description: Thời gian giao dịch
+                  example: "2025-10-23 14:30:25"
+                accountNumber:
+                  type: string
+                  description: Số tài khoản nhận tiền
+                  example: "0123456789"
+                code:
+                  type: string
+                  description: Mã giao dịch từ ngân hàng
+                  nullable: true
+                  example: "FT25296123456"
+                content:
+                  type: string
+                  description: |
+                    Nội dung chuyển khoản (chứa orderNumber để map với đơn hàng)
+                    Format: HBC001KSK0012510230001
+                  example: "HBC001KSK0012510230001"
+                transferType:
+                  type: string
+                  description: Loại giao dịch (in/out)
+                  enum: ["in", "out"]
+                  example: "in"
+                transferAmount:
+                  type: number
+                  description: Số tiền chuyển khoản
+                  example: 100000
+                accumulated:
+                  type: number
+                  description: Số dư tài khoản sau giao dịch
+                  nullable: true
+                  example: 5000000
+                subAccount:
+                  type: string
+                  description: Tài khoản phụ (nếu có)
+                  nullable: true
+                  example: null
+                referenceCode:
+                  type: string
+                  description: Mã tham chiếu (unique identifier)
+                  example: "FT25296123456"
+                description:
+                  type: string
+                  description: Mô tả bổ sung
+                  nullable: true
+                  example: "Thanh toan don hang"
+            examples:
+              validPayment:
+                summary: Thanh toán hợp lệ
+                value:
+                  id: 123456789
+                  gateway: "MB"
+                  transactionDate: "2025-10-23 14:30:25"
+                  accountNumber: "0123456789"
+                  code: "FT25296123456"
+                  content: "HBC001KSK0012510230001"
+                  transferType: "in"
+                  transferAmount: 100000
+                  accumulated: 5000000
+                  subAccount: null
+                  referenceCode: "FT25296123456"
+                  description: "Thanh toan don hang"
+              noOrderNumber:
+                summary: Không có orderNumber trong content
+                value:
+                  id: 123456790
+                  gateway: "MB"
+                  transactionDate: "2025-10-23 14:35:00"
+                  accountNumber: "0123456789"
+                  code: "FT25296123457"
+                  content: "Chuyen tien khac"
+                  transferType: "in"
+                  transferAmount: 50000
+                  accumulated: 5050000
+                  subAccount: null
+                  referenceCode: "FT25296123457"
+                  description: null
+              duplicateTransaction:
+                summary: Giao dịch trùng lặp (idempotency)
+                value:
+                  id: 123456789
+                  gateway: "MB"
+                  transactionDate: "2025-10-23 14:30:25"
+                  accountNumber: "0123456789"
+                  code: "FT25296123456"
+                  content: "HBC001KSK0012510230001"
+                  transferType: "in"
+                  transferAmount: 100000
+                  accumulated: 5000000
+                  subAccount: null
+                  referenceCode: "FT25296123456"
+                  description: "Thanh toan don hang"
+      responses:
+        '200':
+          description: Webhook xử lý thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      transactionId:
+                        type: integer
+                        description: ID của transaction đã lưu
+                        example: 456
+                      duplicate:
+                        type: boolean
+                        description: True nếu đây là duplicate transaction (optional field)
+                        example: false
+                  message:
+                    type: string
+                    example: "Payment received"
+              examples:
+                paymentCompleted:
+                  summary: Thanh toán đủ tiền, order được cập nhật
+                  value:
+                    success: true
+                    data:
+                      transactionId: 456
+                    message: "Payment received"
+                paymentInsufficient:
+                  summary: Thanh toán không đủ tiền
+                  value:
+                    success: true
+                    data:
+                      transactionId: 457
+                    message: "Payment received"
+                noOrderNumber:
+                  summary: Không tìm thấy orderNumber trong content
+                  value:
+                    success: true
+                    data:
+                      transactionId: 458
+                    message: "Payment received"
+                orderNotFound:
+                  summary: OrderNumber không tồn tại trong DB
+                  value:
+                    success: true
+                    data:
+                      transactionId: 459
+                    message: "Payment received but order not found"
+                duplicateTransaction:
+                  summary: Transaction đã được xử lý trước đó
+                  value:
+                    success: true
+                    data:
+                      transactionId: 456
+                      duplicate: true
+                    message: "Payment already processed"
+        '500':
+          description: Lỗi server khi xử lý webhook
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Internal Server Error"
+              examples:
+                serverError:
+                  summary: Lỗi không xác định
+                  value:
+                    success: false
+                    message: "Database connection failed"
+
+components:
+  schemas:
+    SepayWebhookPayload:
+      type: object
+      required:
+        - id
+        - gateway
+        - transactionDate
+        - accountNumber
+        - transferAmount
+        - content
+      properties:
+        id:
+          type: integer
+          description: ID giao dịch từ Sepay
+        gateway:
+          type: string
+          description: Tên cổng thanh toán
+        transactionDate:
+          type: string
+          format: date-time
+          description: Thời gian giao dịch
+        accountNumber:
+          type: string
+          description: Số tài khoản nhận tiền
+        code:
+          type: string
+          nullable: true
+          description: Mã giao dịch từ ngân hàng
+        content:
+          type: string
+          description: Nội dung chuyển khoản
+        transferType:
+          type: string
+          enum: ["in", "out"]
+          description: Loại giao dịch
+        transferAmount:
+          type: number
+          description: Số tiền chuyển khoản
+        accumulated:
+          type: number
+          nullable: true
+          description: Số dư tài khoản
+        subAccount:
+          type: string
+          nullable: true
+          description: Tài khoản phụ
+        referenceCode:
+          type: string
+          description: Mã tham chiếu
+        description:
+          type: string
+          nullable: true
+          description: Mô tả bổ sung
+    
+    PaymentTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID của transaction trong DB
+        referenceNumber:
+          type: string
+          description: Mã tham chiếu (từ referenceCode)
+        gateway:
+          type: string
+          description: Tên cổng thanh toán
+        transactionDate:
+          type: string
+          format: date-time
+          description: Thời gian giao dịch
+        accountNumber:
+          type: string
+          description: Số tài khoản
+        amountIn:
+          type: number
+          description: Số tiền nhận vào
+        content:
+          type: string
+          description: Nội dung chuyển khoản
+        createdAt:
+          type: string
+          format: date-time
+          description: Thời gian tạo bản ghi

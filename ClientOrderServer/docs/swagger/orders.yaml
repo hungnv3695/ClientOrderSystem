@@ -1,13 +1,16 @@
 /api/orders/numbers:
   get:
-    summary: Get today's order numbers for dashboard/caller screen
+    summary: Lấy danh sách số thứ tự đơn hàng hôm nay
+    description: |
+      Lấy danh sách tất cả đơn hàng trong ngày hiện tại để hiển thị trên dashboard hoặc caller screen.
+      Endpoint này yêu cầu authentication và lọc theo shopCode của user đăng nhập.
     tags:
       - Orders
     security:
       - bearerAuth: []
     responses:
       200:
-        description: List of order numbers retrieved successfully
+        description: Lấy danh sách thành công
         content:
           application/json:
             schema:
@@ -23,12 +26,25 @@
                     properties:
                       id:
                         type: integer
+                        example: 123
                       orderNumber:
                         type: string
+                        example: HBC001KSK0012510230001
                       status:
                         type: integer
+                        description: "0=Cancelled, 1=Received, 2=Processing, 3=Completed, 4=Delivered"
+                        example: 2
+                      paymentStatus:
+                        type: integer
+                        description: "0=Unpaid, 1=Paid"
+                        example: 0
+                      totalPrice:
+                        type: number
+                        example: 95000
                       note:
                         type: string
+                        nullable: true
+                        example: Không hành
                       foods:
                         type: array
                         items:
@@ -36,14 +52,55 @@
                           properties:
                             id:
                               type: integer
+                              example: 7
                             name:
                               type: string
+                              example: Cà phê sữa đá
                             quantity:
                               type: integer
+                              example: 2
+                            unitPrice:
+                              type: number
+                              example: 20000
+      401:
+        description: Unauthorized - Token không hợp lệ
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Unauthorized
+      500:
+        description: Internal Server Error
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Internal Server Error
 
 /api/orders:
   post:
-    summary: Create a new order
+    summary: Tạo đơn hàng mới
+    description: |
+      Tạo đơn hàng mới từ thiết bị order (kiosk, tablet, web).
+      Endpoint này không yêu cầu authentication (public endpoint).
+      
+      Quy trình:
+      1. Sinh orderNumber tự động theo format: [shopCode][deviceCode][yymmdd][seq4]
+      2. Tính totalPrice từ danh sách items
+      3. Tạo bản ghi Order và OrderFood
+      4. Emit socket event để cập nhật realtime cho dashboard/caller
     tags:
       - Orders
     requestBody:
@@ -59,25 +116,32 @@
             properties:
               shopCode:
                 type: string
+                description: Mã cửa hàng (format ABC123)
                 example: HBC001
               deviceCode:
                 type: string
+                description: Mã thiết bị (format ABC123)
                 example: KSK001
               paymentStatus:
                 type: integer
+                description: "Trạng thái thanh toán: 0=Unpaid, 1=Paid"
                 enum: [0, 1]
-                description: 0=Unpaid, 1=Paid
+                default: 0
                 example: 0
               paymentMethod:
                 type: integer
+                description: "Phương thức thanh toán: 0=Cash, 1=Bank Transfer"
                 enum: [0, 1]
-                description: 0=Cash, 1=Bank Transfer
+                default: 0
                 example: 0
               note:
                 type: string
-                example: Customer note
+                description: Ghi chú của khách hàng
+                example: Không hành
               items:
                 type: array
+                description: Danh sách món ăn (tối thiểu 1 món)
+                minItems: 1
                 items:
                   type: object
                   required:
@@ -85,13 +149,16 @@
                   properties:
                     foodId:
                       type: integer
-                      example: 1
+                      description: ID của món ăn
+                      example: 7
                     quantity:
                       type: integer
+                      description: Số lượng (mặc định 1)
+                      default: 1
                       example: 2
     responses:
       200:
-        description: Order created successfully
+        description: Tạo đơn hàng thành công
         content:
           application/json:
             schema:
@@ -101,26 +168,75 @@
                   type: boolean
                   example: true
                 data:
-                  $ref: '#/components/schemas/Order'
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      example: 123
+                    orderNumber:
+                      type: string
+                      example: HBC001KSK0012510230001
+                    status:
+                      type: integer
+                      example: 1
+                    paymentStatus:
+                      type: integer
+                      example: 0
+                    paymentMethod:
+                      type: integer
+                      example: 0
+                    totalPrice:
+                      type: number
+                      example: 55000
+                    note:
+                      type: string
+                      example: Không hành
+                    shopCode:
+                      type: string
+                      example: HBC001
+                    deviceCode:
+                      type: string
+                      example: KSK001
+                    createdAt:
+                      type: string
+                      format: date-time
+                    updatedAt:
+                      type: string
+                      format: date-time
       400:
-        description: Invalid order data
+        description: Dữ liệu không hợp lệ
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Error'
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Invalid order data
+      500:
+        description: Internal Server Error
 
 /api/orders/{id}/status:
   patch:
-    summary: Update order status
+    summary: Cập nhật trạng thái đơn hàng
+    description: |
+      Cập nhật trạng thái xử lý của đơn hàng.
+      Endpoint này không yêu cầu authentication (dùng cho caller screen).
+      
+      Sau khi cập nhật thành công, hệ thống sẽ emit socket event để cập nhật realtime.
     tags:
       - Orders
     parameters:
-      - in: path
-        name: id
+      - name: id
+        in: path
         required: true
+        description: ID của đơn hàng
         schema:
           type: integer
-        description: Order ID
+          example: 123
     requestBody:
       required: true
       content:
@@ -132,29 +248,77 @@
             properties:
               status:
                 type: integer
+                description: "Trạng thái mới: 0=Cancelled, 1=Received, 2=Processing, 3=Completed, 4=Delivered"
                 enum: [0, 1, 2, 3, 4]
-                description: 0=Cancelled, 1=Received, 2=Processing, 3=Completed, 4=Delivered
+                example: 2
               shopCode:
                 type: string
+                description: Mã cửa hàng (optional, dùng để emit socket)
                 example: HBC001
     responses:
       200:
-        description: Status updated successfully
+        description: Cập nhật thành công
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
+                data:
+                  type: object
+                  description: Thông tin đơn hàng đã cập nhật
+      400:
+        description: Dữ liệu không hợp lệ
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Missing status
       404:
-        description: Order not found
+        description: Không tìm thấy đơn hàng
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Order not found
+      500:
+        description: Internal Server Error
 
 /api/orders/{id}/details:
   patch:
-    summary: Update order details (items, note)
+    summary: Cập nhật chi tiết đơn hàng
+    description: |
+      Cập nhật ghi chú hoặc danh sách món ăn của đơn hàng.
+      Endpoint này không yêu cầu authentication.
+      
+      Nếu cập nhật items, hệ thống sẽ:
+      1. Xóa tất cả items cũ
+      2. Tạo items mới
+      3. Tính lại totalPrice
     tags:
       - Orders
     parameters:
-      - in: path
-        name: id
+      - name: id
+        in: path
         required: true
+        description: ID của đơn hàng
         schema:
           type: integer
-        description: Order ID
+          example: 123
     requestBody:
       required: true
       content:
@@ -164,36 +328,25 @@
             properties:
               note:
                 type: string
+                description: Ghi chú mới
+                example: Không hành, thêm rau
               items:
                 type: array
+                description: Danh sách món ăn mới (thay thế hoàn toàn)
                 items:
                   type: object
+                  required:
+                    - foodId
                   properties:
                     foodId:
                       type: integer
+                      example: 7
                     quantity:
                       type: integer
+                      example: 3
     responses:
       200:
-        description: Details updated successfully
-      404:
-        description: Order not found
-
-/api/orders/{id}/payment-status:
-  get:
-    summary: Check payment status of an order
-    tags:
-      - Orders
-    parameters:
-      - in: path
-        name: id
-        required: true
-        schema:
-          type: integer
-        description: Order ID
-    responses:
-      200:
-        description: Payment status retrieved
+        description: Cập nhật thành công
         content:
           application/json:
             schema:
@@ -201,88 +354,169 @@
               properties:
                 success:
                   type: boolean
+                  example: true
+                data:
+                  type: object
+                  description: Thông tin đơn hàng đã cập nhật
+      400:
+        description: Dữ liệu không hợp lệ
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Nothing to update
+      404:
+        description: Không tìm thấy đơn hàng
+      500:
+        description: Internal Server Error
+
+/api/orders/{id}/payment-status:
+  get:
+    summary: Kiểm tra trạng thái thanh toán của đơn hàng
+    description: |
+      Kiểm tra xem đơn hàng đã được thanh toán hay chưa.
+      Endpoint này được sử dụng bởi client order view để hiển thị trạng thái thanh toán.
+    tags:
+      - Orders
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID của đơn hàng
+        schema:
+          type: integer
+          example: 123
+    responses:
+      200:
+        description: Lấy trạng thái thành công
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: true
                 data:
                   type: object
                   properties:
                     paid:
                       type: boolean
+                      description: "True nếu đã thanh toán (paymentStatus = 1)"
+                      example: false
+      400:
+        description: Dữ liệu không hợp lệ
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Missing order id
+      500:
+        description: Internal Server Error
 
 /api/orders/search:
   get:
-    summary: Search orders with filters (Manager only)
+    summary: Tìm kiếm đơn hàng với nhiều bộ lọc (Manager only)
+    description: |
+      Tìm kiếm đơn hàng với nhiều bộ lọc khác nhau.
+      Endpoint này yêu cầu authentication và role manager.
+      
+      Filters hỗ trợ:
+      - Khoảng thời gian (fromDate, toDate) - format yyyymmdd
+      - Khoảng giá (minTotal, maxTotal)
+      - Trạng thái đơn hàng (status) - phân cách bằng dấu phẩy
+      - Trạng thái thanh toán (paymentStatus)
+      - Phân trang (page, pageSize)
+      - Sắp xếp (sortBy, sortOrder)
     tags:
       - Orders
       - Manager
     security:
       - bearerAuth: []
     parameters:
-      - in: query
-        name: fromDate
+      - name: fromDate
+        in: query
         schema:
           type: string
-          pattern: ^\d{8}$
-        description: Start date in yyyymmdd format (e.g., 20250801)
-        example: "20250801"
-      - in: query
-        name: toDate
+          pattern: '^\d{8}$'
+        description: Ngày bắt đầu (format yyyymmdd)
+        example: "20251001"
+      - name: toDate
+        in: query
         schema:
           type: string
-          pattern: ^\d{8}$
-        description: End date in yyyymmdd format (e.g., 20250817)
-        example: "20250817"
-      - in: query
-        name: minTotal
+          pattern: '^\d{8}$'
+        description: Ngày kết thúc (format yyyymmdd)
+        example: "20251031"
+      - name: minTotal
+        in: query
         schema:
           type: integer
-        description: Minimum total price
-        example: 0
-      - in: query
-        name: maxTotal
+        description: Tổng tiền tối thiểu
+        example: 50000
+      - name: maxTotal
+        in: query
         schema:
           type: integer
-        description: Maximum total price
-        example: 100000
-      - in: query
-        name: status
+        description: Tổng tiền tối đa
+        example: 200000
+      - name: status
+        in: query
         schema:
           type: string
-        description: Order status (comma-separated integers 0-4)
+        description: Trạng thái đơn hàng (phân cách bằng dấu phẩy, ví dụ "2,3")
         example: "2,3"
-      - in: query
-        name: paymentStatus
+      - name: paymentStatus
+        in: query
         schema:
           type: string
-        description: Payment status (comma-separated 0=Unpaid,1=Paid)
+        description: Trạng thái thanh toán (0=Unpaid hoặc 1=Paid)
         example: "1"
-      - in: query
-        name: page
+      - name: page
+        in: query
         schema:
           type: integer
-        description: Page number (default 1)
+          default: 1
+        description: Số trang
         example: 1
-      - in: query
-        name: pageSize
+      - name: pageSize
+        in: query
         schema:
           type: integer
-        description: Items per page (default 50)
+          default: 50
+        description: Số items mỗi trang
         example: 20
-      - in: query
-        name: sortBy
+      - name: sortBy
+        in: query
         schema:
           type: string
           enum: [updatedAt, totalPrice, orderNumber]
-        description: Sort field
+          default: updatedAt
+        description: Trường sắp xếp
         example: updatedAt
-      - in: query
-        name: sortOrder
+      - name: sortOrder
+        in: query
         schema:
           type: string
           enum: [ASC, DESC]
-        description: Sort order
+          default: DESC
+        description: Thứ tự sắp xếp
         example: DESC
     responses:
       200:
-        description: Search results with pagination
+        description: Kết quả tìm kiếm
         content:
           application/json:
             schema:
@@ -290,20 +524,56 @@
               properties:
                 success:
                   type: boolean
+                  example: true
                 data:
                   type: object
                   properties:
                     rows:
                       type: array
+                      description: Danh sách đơn hàng
                       items:
-                        $ref: '#/components/schemas/Order'
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          orderNumber:
+                            type: string
+                          status:
+                            type: integer
+                          paymentStatus:
+                            type: integer
+                          totalPrice:
+                            type: number
+                          createdAt:
+                            type: string
+                            format: date-time
+                          updatedAt:
+                            type: string
+                            format: date-time
                     count:
                       type: integer
+                      description: Tổng số kết quả
+                      example: 150
                     page:
                       type: integer
+                      example: 1
                     pageSize:
                       type: integer
+                      example: 20
       401:
-        description: Unauthorized
+        description: Unauthorized - Token không hợp lệ
       403:
-        description: Forbidden - Manager role required
+        description: Forbidden - Yêu cầu role manager
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                success:
+                  type: boolean
+                  example: false
+                message:
+                  type: string
+                  example: Forbidden - Insufficient permissions
+      500:
+        description: Internal Server Error
