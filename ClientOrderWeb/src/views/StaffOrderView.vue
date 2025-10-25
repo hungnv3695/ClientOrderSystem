@@ -223,6 +223,7 @@ async function handlePayment() {
         const currentDevice = getCurrentDevice()
         const cashierId = getCurrentUser()?.id
 
+        // Validation - kiểm tra thông tin bắt buộc
         if (!cashierId) {
             alert(STAFF_ORDER_ALERT_MESS.CASHIER_NOT_FOUND)
             return
@@ -234,6 +235,7 @@ async function handlePayment() {
             return
         }
         
+        // Validation - kiểm tra thông tin bắt buộc
         if (!currentDevice || !currentDevice.code) {
             alert(CLIENT_ORDER_ALERT_MESS.DEVICE_CODE_NOT_FOUND)
             return
@@ -270,7 +272,7 @@ async function handlePayment() {
 
         if (receiptResult) {
             // Bước 5: In hóa đơn (nếu có cấu hình máy in)
-            await printReceipt(receiptResult)
+            await printReceiptForCustomer(receiptResult)
 
             // Bước 6: Reset màn hình về trạng thái ban đầu
             resetOrder()
@@ -293,7 +295,7 @@ async function handlePayment() {
  * 4. Gửi lệnh in đến máy in qua IP
  * @param {Object} receiptData - Dữ liệu hóa đơn cần in
  */
-async function printReceipt(receiptData) {
+async function printReceiptForCustomer(receiptData) {
     try {
         // Bước 1: Lấy cấu hình máy in từ localStorage device
         const printerConfig = getPrinterConfigFromDevice()

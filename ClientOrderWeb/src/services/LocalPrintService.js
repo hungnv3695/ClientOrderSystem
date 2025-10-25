@@ -200,6 +200,8 @@ export function createReceiptData(receiptResponse) {
         paymentMethod,
         paidAt: paidAtString,
         created_at,
+        shopCode,
+        userCode,
         items = []
     } = receiptResponse
 
@@ -223,7 +225,9 @@ export function createReceiptData(receiptResponse) {
         discountAmount: parseInt(discountAmount) || 0,
         finalAmount: parseInt(finalAmount) || parseInt(totalAmount) || 0,
         paymentMethod: paymentMethod !== undefined ? paymentMethod : 0, // INTEGER: 0=cash, 1=bank_transfer
-        paidAt: formattedPaidAt
+        paidAt: formattedPaidAt,
+        shopCode: shopCode || '',
+        userCode: userCode || '',
     }
 
     return formattedData
