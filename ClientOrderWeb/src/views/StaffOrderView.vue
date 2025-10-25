@@ -220,7 +220,7 @@ async function handlePayment() {
     try {
         // Bước 1: Lấy thông tin shop và device từ localStorage
         const shopCode = getCurrentShop()
-        const currentDevice = getCurrentDevice()
+        const deviceCode = getCurrentDevice()
         const cashierId = getCurrentUser()?.id
 
         // Validation - kiểm tra thông tin bắt buộc
@@ -236,7 +236,7 @@ async function handlePayment() {
         }
         
         // Validation - kiểm tra thông tin bắt buộc
-        if (!currentDevice || !currentDevice.code) {
+        if (!deviceCode) {
             alert(CLIENT_ORDER_ALERT_MESS.DEVICE_CODE_NOT_FOUND)
             return
         }
@@ -244,7 +244,7 @@ async function handlePayment() {
         // Bước 2: Chuẩn bị dữ liệu đơn hàng
         const orderData = {
             shopCode: shopCode,
-            deviceCode: currentDevice.code,
+            deviceCode: deviceCode,
             paymentStatus: PAYMENT_STATUS.PAID,
             paymentMethod: PAYMENT_METHOD.CASH,
             cashierId: cashierId,  // Nhân viên đặt đơn không có cashierId

@@ -281,7 +281,7 @@ async function createOrder() {
     try {
         // Lấy shop code và device code từ user hiện tại
         const shopCode = getCurrentShop()
-        const currentDevice = getCurrentDevice()
+        const deviceCode = getCurrentDevice()
         
         // Kiểm tra xem user có shop và device không
         if (!shopCode) {
@@ -289,14 +289,12 @@ async function createOrder() {
             alert(CLIENT_ORDER_ALERT_MESS.SHOP_CODE_NOT_FOUND)
             return
         }
-        
-        if (!currentDevice || !currentDevice.code) {
+
+        if (!deviceCode) {
             console.error('No device code available for current user')
             alert(CLIENT_ORDER_ALERT_MESS.DEVICE_CODE_NOT_FOUND)
             return
         }
-
-        const deviceCode = currentDevice.code
 
         const orderParam = {
             shopCode: shopCode,

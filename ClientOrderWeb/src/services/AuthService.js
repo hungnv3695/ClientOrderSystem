@@ -95,7 +95,6 @@ export function getCurrentUser() {
 export function getCurrentShop() {
     try {
         const user = getCurrentUser()
-        console.log('Current user:', user)
         if (!user || !user.shopCode) {
             return null
         }
@@ -117,9 +116,7 @@ export function getCurrentDevice() {
             return null
         }
         // Trả về object để compatible với code cũ
-        return {
-            code: user.deviceCode
-        }
+        return user.deviceCode
     } catch (error) {
         console.error('Error getting current device code:', error)
         return null
