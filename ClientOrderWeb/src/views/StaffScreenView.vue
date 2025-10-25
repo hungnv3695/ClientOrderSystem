@@ -59,6 +59,15 @@
                 @click="navigateToStaffOrderManage"
               />
 
+              <!-- Đăng xuất -->
+              <FunctionScreenButton
+                title="Đăng xuất"
+                description="Thoát khỏi tài khoản"
+                icon-class="bi bi-box-arrow-right"
+                button-class="logout-btn"
+                @click="handleLogout"
+              />
+
             </div>
           </div>
         </div>
@@ -70,17 +79,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCurrentShop } from '../services/AuthService.js'
+import { getCurrentDevice, getCurrentShop, logout } from '../services/AuthService.js'
 import FunctionScreenButton from '../components/FunctionScreenButton.vue'
 import { SCREEN } from '../constants/app.constants.js'
 import { STAFF_SCREEN_ALERT_MESS } from '../constants/msg.constants.js'
 
 const router = useRouter()
 const currentShopCode = ref(null)
+const deviceCode = ref(null);
 
 // Lấy shopCode hiện tại
 onMounted(() => {
   currentShopCode.value = getCurrentShop()
+  deviceCode.value = getCurrentDevice();
   console.log('Current shop code:', currentShopCode.value)
 })
 
@@ -129,6 +140,17 @@ const navigateToStaffOrderManage = () => {
     })
   } else {
     alert(STAFF_SCREEN_ALERT_MESS.SHOP_CODE_NOT_FOUND)
+  }
+}
+
+// Xử lý đăng xuất
+const handleLogout = () => {
+  if (confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+    logout()
+    router.push({ name: 'Login', query: { 
+      shopCode: currentShopCode.value, 
+      deviceCode: deviceCode.value,
+      target: 'StaffScreen' } })
   }
 }
 </script>
@@ -265,7 +287,14 @@ const navigateToStaffOrderManage = () => {
   background: linear-gradient(135deg, var(--nature-green-soft) 0%, var(--nature-green) 100%);
 }
 
+.logout-btn {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+}
 
+.logout-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
+}
 
 /* Responsive */
 @media (max-width: 767px) {
