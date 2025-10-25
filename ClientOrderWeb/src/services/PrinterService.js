@@ -6,10 +6,8 @@ export function printReceipt(ip, port, deviceId, receipt) {
     return new Promise((resolve, reject) => {
         try {
             if (!window.epson || !window.epson.ePOSDevice) {
-                console.log('Epson ePOSDevice SDK not loaded');
                 return reject(new Error('Epson ePOSDevice SDK not loaded'));
             }
-            console.log('Epson ePOSDevice SDK loaded');
             const ePosDev = new epson.ePOSDevice();
             const numericPort = typeof port === 'number' ? port : Number(port) || 8008;
             const connectOpts = { eposprint: false }; // force WS mode, avoid HTTP Display probe

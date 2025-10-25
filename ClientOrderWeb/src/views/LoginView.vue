@@ -90,19 +90,16 @@ onMounted(() => {
     // Lấy deviceCode từ URL
     if (urlDeviceCode) {
         deviceCode.value = urlDeviceCode
-        console.log('Device code from URL:', urlDeviceCode)
     } 
     
     // Lấy shopCode từ URL
     if (urlShopCode) {
         shopCode.value = urlShopCode
-        console.log('Shop code from URL:', urlShopCode)
     }
     
     // Lấy screen target từ URL
     if (urlTarget) {
         targetScreen.value = urlTarget
-        console.log('Target screen from URL:', urlTarget)
     }
 })
 
@@ -124,25 +121,19 @@ async function onSubmit() {
     }
     
     try {
-        console.log('Attempting login with device code:', deviceCode.value, 'and shop code:', shopCode.value)
         const user = await login(username.value, password.value, deviceCode.value, shopCode.value)
-        console.log('Login successful, user:', user)
 
         // Xác định đường dẫn dựa trên target và role
         const config = screenConfig[targetScreen.value]
         const userRole = user.role
         
-        console.log('User role:', userRole, 'Target screen:', targetScreen.value)
-        
         // Kiểm tra quyền truy cập
         if (config.allowedRoles.includes(userRole)) {
             const redirectPath = config.path
             await router.push(redirectPath)
-            console.log('Navigation completed to:', redirectPath)
         } else {
             // Không có quyền truy cập -> đăng xuất và xóa session
             logout()
-            console.log('Access denied - user logged out automatically')
             
             error.value = `Bạn không có quyền truy cập màn hình "${config.name}".`
             console.error('Access denied for role:', userRole)

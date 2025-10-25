@@ -79,8 +79,6 @@ async function handleFetchResponse(response) {
  * @returns {Promise<Object>} Response data
  */
 async function safeFetch(url, options = {}, timeout = DEFAULT_TIMEOUT) {
-    console.log(`Making request to: ${url} with timeout: ${timeout}ms`)
-    
     try {
         const response = await fetch(url, {
             ...options,
@@ -122,7 +120,6 @@ export async function checkPrintServiceHealth() {
         
         if (response.ok) {
             const result = await response.json()
-            console.log('Print service health:', result)
             return true
         }
         return false
@@ -141,18 +138,12 @@ export async function checkPrintServiceHealth() {
  * @returns {Promise<Object>} { success: boolean, message: string, data?: any }
  */
 export async function printReceipt(printerIp, port = '', deviceId = 'local_printer', receiptData) {
-    console.log('=== PRINT RECEIPT START ===')
-    console.log('Printer config:', { printerIp, port, deviceId })
-    console.log('Receipt data:', receiptData)
-    
     try {
         // Check print service health first
-        console.log('Checking print service health...')
         const serviceHealthy = await checkPrintServiceHealth()
         if (!serviceHealthy) {
             throw new Error('Print service không hoạt động. Vui lòng kiểm tra ClientOrderPrint service.')
         }
-        console.log('Print service is healthy')
 
         // Validate input data
         if (!printerIp) {
@@ -169,17 +160,12 @@ export async function printReceipt(printerIp, port = '', deviceId = 'local_print
             receiptData
         }
 
-        console.log('Sending print request:', requestBody)
         const url = PRINT_SERVICE_URL + PRINT_ENDPOINTS.RECEIPT
-        console.log('Print service URL:', url)
         
         const result = await safeFetch(url, {
             method: API_METHODS.POST,
             body: JSON.stringify(requestBody)
         })
-
-        console.log('Print successful:', result)
-        console.log('=== PRINT RECEIPT END ===')
         
         return {
             success: true,
@@ -188,9 +174,7 @@ export async function printReceipt(printerIp, port = '', deviceId = 'local_print
         }
 
     } catch (error) {
-        console.error('=== PRINT RECEIPT ERROR ===')
-        console.error('Error details:', error)
-        console.error('Stack trace:', error.stack)
+        console.error('Print receipt error:', error)
         throw new Error(error.message || 'Lỗi không xác định khi in hóa đơn')
     }
 }
@@ -242,6 +226,5 @@ export function createReceiptData(receiptResponse) {
         paidAt: formattedPaidAt
     }
 
-    console.log('Created receipt data:', formattedData)
     return formattedData
 }

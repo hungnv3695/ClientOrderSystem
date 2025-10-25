@@ -62,7 +62,6 @@ export function logout() {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
         
-        console.log('User logged out successfully')
     } catch (error) {
         console.error('Logout error:', error)
         // Vẫn xóa localStorage dù có lỗi
@@ -222,7 +221,6 @@ export function clearAuthData() {
     try {
         localStorage.removeItem('token')
         localStorage.removeItem('user')
-        console.log('Authentication data cleared')
     } catch (error) {
         console.error('Error clearing auth data:', error)
     }

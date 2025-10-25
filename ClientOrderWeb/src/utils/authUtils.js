@@ -10,7 +10,6 @@ export function resetAuthData() {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('deviceCode')
-    console.log('Authentication data cleared')
 }
 
 /**

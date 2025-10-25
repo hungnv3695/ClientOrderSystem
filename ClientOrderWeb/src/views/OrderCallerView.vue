@@ -106,7 +106,6 @@ onMounted(async () => {
     const socket = io(SOCKET_URL, { query: { shopId: getCurrentShop() } })
     socket.on('orders', (data) => {
         orders.value = data
-        console.log('Received orders:', data) // Debugging line
     })
 })
 
