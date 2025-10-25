@@ -1,3 +1,5 @@
+const { PAYMENT_METHODS, DAY_OF_WEEK_VN } = require('../constants/app.constants.js');
+
 /**
  * Epson Print Builder - Adapted from frontend PrinterService.js
  * Uses the same approach as the Epson ePOSDevice SDK
@@ -15,7 +17,15 @@ function formatCurrency(amount) {
  */
 function formatDateTime(date = new Date()) {
     const dateObj = new Date(date);
-    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    const days = [
+        DAY_OF_WEEK_VN.SUNDAY, 
+        DAY_OF_WEEK_VN.MONDAY, 
+        DAY_OF_WEEK_VN.TUESDAY, 
+        DAY_OF_WEEK_VN.WEDNESDAY, 
+        DAY_OF_WEEK_VN.THURSDAY, 
+        DAY_OF_WEEK_VN.FRIDAY, 
+        DAY_OF_WEEK_VN.SATURDAY
+    ];
     const dayName = days[dateObj.getDay()];
     
     const time = dateObj.toLocaleTimeString('vi-VN', { 
@@ -73,9 +83,9 @@ function createReceiptContent(receiptData) {
     content += `<feed line="1"/>`;
     
     // Payment method - căn trái
-    const paymentText = paymentMethod === 'bank_transfer' ? 'Chuyển khoản' : 
-                       paymentMethod === 'cash' ? 'Tiền mặt' : 
-                       paymentMethod === 'card' ? 'Thẻ' : 'Khác';
+    const paymentText = paymentMethod === PAYMENT_METHODS.BANK_TRANSFER ? 'Chuyển khoản' : 
+                       paymentMethod === PAYMENT_METHODS.CASH ? 'Tiền mặt' : 
+                       paymentMethod === PAYMENT_METHODS.CARD ? 'Thẻ' : 'Khác';
     content += `<text align="left">Phương thức: ${escapeXml(paymentText)}</text>`;
     content += `<feed line="1"/>`;
     content += `<text align="left">Nhân viên: ${escapeXml(deviceId)}</text>`;
@@ -91,7 +101,7 @@ function createReceiptContent(receiptData) {
 
     // Items list - tên sản phẩm và giá trên cùng 1 dòng
     items.forEach((item) => {
-        const quantity = item.qty || 1;
+        const quantity = item.quantity || 1;
         const unitPrice = item.unitPrice || 0;
         const itemName = item.itemName || 'Sản phẩm';
 
@@ -138,7 +148,7 @@ async function testPrinterConnection(printerIp, port = '', deviceId = 'local_pri
     
     try {
         // Always use local_printer for Epson compatibility
-        const epsonDeviceId = 'local_printer';
+        const epsonDeviceId = deviceId;
         const printerUrl = `http://${printerIp}${port ? `:${port}` : ''}/cgi-bin/epos/service.cgi?devid=${epsonDeviceId}&timeout=5000`;
         
         // Send empty print command to test connection
