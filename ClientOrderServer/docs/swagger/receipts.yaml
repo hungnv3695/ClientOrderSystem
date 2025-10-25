@@ -159,6 +159,14 @@ paths:
                         nullable: true
                         description: Ghi chú
                         example: "Khách thanh toán đủ"
+                      shopCode:
+                        type: string
+                        description: Mã cửa hàng (từ Order)
+                        example: "SHOP001"
+                      userCode:
+                        type: string
+                        description: Mã nhân viên thu ngân (từ User)
+                        example: "USER123"
                       items:
                         type: array
                         description: Danh sách món ăn trong biên lai
@@ -215,6 +223,8 @@ paths:
                       cashierId: 10
                       status: 1
                       note: "Khách thanh toán đủ"
+                      shopCode: "SHOP001"
+                      userCode: "USER123"
                       items:
                         - itemId: 7
                           itemName: "Cà phê sữa đá"
@@ -334,6 +344,12 @@ components:
           type: string
           nullable: true
           description: Ghi chú
+        shopCode:
+          type: string
+          description: Mã cửa hàng (từ Order)
+        userCode:
+          type: string
+          description: Mã nhân viên thu ngân (từ User)
         items:
           type: array
           description: Danh sách món ăn trong biên lai

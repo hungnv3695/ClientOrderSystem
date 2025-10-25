@@ -1,4 +1,4 @@
-const { sequelize, Order, Food, Receipt, ReceiptItem, OrderFood } = require('../database');
+const { sequelize, Order, Food, Receipt, ReceiptItem, OrderFood, User } = require('../database');
 const { Op } = require('sequelize');
 const { PAYMENT_STATUS, PAYMENT_METHOD } = require('../constants/order.constants');
 const { formatDateTime } = require('../utils/dateTimeUtils.js');
@@ -133,10 +133,13 @@ async function createReceiptByOrderId(orderId, options = {}) {
             order.paymentStatus = PAYMENT_STATUS.PAID;
             await order.save({ transaction: t });
 
+            const user = await User.findByPk(cashierId);
+            const userCode = user ? user.code : '';
+
             // 8) Commit và trả về receipt (plain) kèm items bên trong
             await t.commit();
             const plain = typeof receipt.get === 'function' ? receipt.get({ plain: true }) : receipt;
-            return { ...plain, items };
+            return { ...plain, shopCode: order.shopCode, userCode, items };
         } catch (err) {
             // Chỉ rollback một lần (tránh lỗi double rollback)
             try { await t.rollback(); } catch (_) { }
