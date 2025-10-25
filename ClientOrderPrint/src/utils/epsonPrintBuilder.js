@@ -67,7 +67,8 @@ function createReceiptContent(receiptData) {
         finalAmount,
         paymentMethod,
         paidAt,
-        deviceId = 'Hệ thống'
+        shopCode = 'N/A',
+        userCode = 'N/A'
     } = receiptData;
 
     let content = '';
@@ -88,9 +89,11 @@ function createReceiptContent(receiptData) {
                        paymentMethod === PAYMENT_METHODS.CARD ? 'Thẻ' : 'Khác';
     content += `<text align="left">Phương thức: ${escapeXml(paymentText)}</text>`;
     content += `<feed line="1"/>`;
-    content += `<text align="left">Nhân viên: ${escapeXml(deviceId)}</text>`;
+    content += `<text align="left">Cửa hàng: ${escapeXml(shopCode)}</text>`;
     content += `<feed line="1"/>`;
-    
+    content += `<text align="left">Nhân viên: ${escapeXml(userCode)}</text>`;
+    content += `<feed line="1"/>`;
+
     // Separator line
     content += `<text>-----------------------------------</text>`;
     content += `<feed line="1"/>`;
