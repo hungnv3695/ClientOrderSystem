@@ -20,7 +20,12 @@ const config = {
         expiresIn: process.env.JWT_EXPIRES || '8h',
     },
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        // Parse CORS_ORIGIN: nếu có dấu phẩy thì split thành array, nếu không thì giữ nguyên string
+        origin: process.env.CORS_ORIGIN 
+            ? (process.env.CORS_ORIGIN.includes(',') 
+                ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+                : process.env.CORS_ORIGIN)
+            : '*',
     },
 };
 

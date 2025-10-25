@@ -13,16 +13,29 @@ if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Custom format for console output
+// Custom format for console output - Text format
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    winston.format.printf(({ timestamp, level, message, ...meta }) => {
-        let metaStr = '';
-        if (Object.keys(meta).length > 0) {
-            metaStr = '\n' + JSON.stringify(meta, null, 2);
+    winston.format.errors({ stack: true }),
+    winston.format.printf(({ timestamp, level, message, stack, ...meta }) => {
+        // Format: timestamp [level]: message
+        let output = `${timestamp} [${level}]: ${message}`;
+        
+        // Add metadata if exists (excluding internal winston fields)
+        const metaKeys = Object.keys(meta).filter(key => !['timestamp', 'level', 'message'].includes(key));
+        if (metaKeys.length > 0) {
+            const cleanMeta = {};
+            metaKeys.forEach(key => cleanMeta[key] = meta[key]);
+            output += ` ${JSON.stringify(cleanMeta)}`;
         }
-        return `${timestamp} [${level}]: ${message}${metaStr}`;
+        
+        // Add stack trace if error
+        if (stack) {
+            output += `\n${stack}`;
+        }
+        
+        return output;
     })
 );
 
