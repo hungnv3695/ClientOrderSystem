@@ -10,9 +10,6 @@ import OrderCallerView from '../views/OrderCallerView.vue';
 import StaffScreenView from '../views/StaffScreenView.vue';
 import StaffOrderView from '../views/StaffOrderView.vue';
 import StaffOrderManageView from '../views/StaffOrderManageView.vue';
-import OrderListView from '../views/manager/OrderListView.vue';
-import CompanyManagementView from '../views/manager/CompanyManagementView.vue';
-import ShopManagementView from '../views/manager/ShopManagementView.vue';
 
 // Lazy-load LoginView để tối ưu kích thước bundle ban đầu
 // -> chỉ tải khi người dùng truy cập /login
@@ -39,56 +36,35 @@ const routes = [
         name: 'ClientOrder',
         component: ClientOrderView,
         // meta.roles: mảng các vai trò được phép truy cập route này
-        meta: { roles: ['staff', 'manager', 'device'] }
+        meta: { roles: ['device'] }
     },
     // Bảng điều khiển đơn hàng: yêu cầu nhân viên/ quản lý
     {
         path: '/OrderDashboard',
         name: 'OrderDashboard',
         component: OrderDashboardView,
-        meta: { roles: ['staff', 'manager'] }
+        meta: { roles: ['staff'] }
     },
     // Màn hình gọi số/ thông báo đơn đã xong: yêu cầu nhân viên/ quản lý
     {
         path: '/OrderCaller',
         name: 'OrderCaller',
         component: OrderCallerView,
-        meta: { roles: ['staff', 'manager'] }
+        meta: { roles: ['staff'] }
     },
     // Màn hình đặt món cho nhân viên: yêu cầu nhân viên/ quản lý
     {
         path: '/StaffOrder',
         name: 'StaffOrder',
         component: StaffOrderView,
-        meta: { roles: ['staff', 'manager'] }
+        meta: { roles: ['staff'] }
     },
     // Màn hình quản lý đơn hàng cho nhân viên: yêu cầu nhân viên/ quản lý
     {
         path: '/StaffOrderManage',
         name: 'StaffOrderManage',
         component: StaffOrderManageView,
-        meta: { roles: ['staff', 'manager'] }
-    },
-    // Danh sách đơn hàng (quản lý): chỉ cho phép quản lý truy cập
-    {
-        path: '/OrderList',
-        name: 'OrderList',
-        component: OrderListView,
-        meta: { roles: ['manager'] }
-    },
-    // Quản lý công ty: chỉ cho phép quản lý truy cập
-    {
-        path: '/CompanyManagement',
-        name: 'CompanyManagement',
-        component: CompanyManagementView,
-        meta: { roles: ['manager'] }
-    },
-    // Quản lý cửa hàng: chỉ cho phép quản lý truy cập
-    {
-        path: '/ShopManagement',
-        name: 'ShopManagement',
-        component: ShopManagementView,
-        meta: { roles: ['manager'] }
+        meta: { roles: ['staff'] }
     },
 
     // Đường dẫn mặc định: chuyển về trang đăng nhập
