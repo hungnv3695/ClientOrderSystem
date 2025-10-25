@@ -7,7 +7,6 @@ services:
       - ./ClientOrderWeb:/app
     environment:
       - HOST=0.0.0.0
-      - VITE_PRINT_SERVICE_URL=http://localhost:3003/api/print
     command: npm run dev -- --host
     depends_on:
       - backend
