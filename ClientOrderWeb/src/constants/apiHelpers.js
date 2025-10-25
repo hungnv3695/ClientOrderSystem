@@ -1,22 +1,22 @@
 /**
  * API Helper Functions
- * Các helper functions để sử dụng với axios và API endpoints
+ * Các hàm trợ giúp để sử dụng với axios và API endpoints
  */
 
 import axios from '../services/axios'
 import { API_ENDPOINTS, API_METHODS, buildUrl, isValidUrl } from './apiEndpoints'
 
 /**
- * Generic API call function
- * @param {string} method - HTTP method (GET, POST, PUT, PATCH, DELETE)
- * @param {string} url - API endpoint URL
- * @param {Object} data - Request payload (for POST, PUT, PATCH)
- * @param {Object} config - Additional axios config
+ * Hàm gọi API chung
+ * @param {string} method - Phương thức HTTP (GET, POST, PUT, PATCH, DELETE)
+ * @param {string} url - URL endpoint của API
+ * @param {Object} data - Dữ liệu request (cho POST, PUT, PATCH)
+ * @param {Object} config - Cấu hình axios bổ sung
  * @returns {Promise} Axios response
  */
 export async function apiCall(method, url, data = null, config = {}) {
     if (!isValidUrl(url)) {
-        throw new Error(`Invalid URL: ${url}`)
+        throw new Error(`URL không hợp lệ: ${url}`)
     }
 
     const axiosConfig = {
@@ -25,7 +25,9 @@ export async function apiCall(method, url, data = null, config = {}) {
         ...config
     }
 
-    if (data && (method === API_METHODS.POST || method === API_METHODS.PUT || method === API_METHODS.PATCH)) {
+    if (data && (method === API_METHODS.POST || 
+        method === API_METHODS.PUT || 
+        method === API_METHODS.PATCH)) {
         axiosConfig.data = data
     }
 
@@ -37,19 +39,19 @@ export async function apiCall(method, url, data = null, config = {}) {
         const response = await axios(axiosConfig)
         return response
     } catch (error) {
-        console.error(`API call failed: ${method} ${url}`, error)
+        console.error(`Gọi API thất bại: ${method} ${url}`, error)
         throw error
     }
 }
 
-// ===== CONVENIENT WRAPPER FUNCTIONS =====
+// ===== CÁC HÀM WRAPPER TIỆN LỢI =====
 
 /**
- * GET request wrapper
+ * Wrapper cho GET request
  * @param {string} url - API endpoint
- * @param {Object} params - Query parameters
- * @param {Object} config - Additional config
- * @returns {Promise} Response data
+ * @param {Object} params - Tham số query
+ * @param {Object} config - Cấu hình bổ sung
+ * @returns {Promise} Dữ liệu response
  */
 export async function apiGet(url, params = {}, config = {}) {
     const response = await apiCall(API_METHODS.GET, url, params, config)
@@ -57,11 +59,11 @@ export async function apiGet(url, params = {}, config = {}) {
 }
 
 /**
- * POST request wrapper
+ * Wrapper cho POST request
  * @param {string} url - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} config - Additional config
- * @returns {Promise} Response data
+ * @param {Object} data - Dữ liệu request payload
+ * @param {Object} config - Cấu hình bổ sung
+ * @returns {Promise} Dữ liệu response
  */
 export async function apiPost(url, data = {}, config = {}) {
     const response = await apiCall(API_METHODS.POST, url, data, config)
@@ -69,11 +71,11 @@ export async function apiPost(url, data = {}, config = {}) {
 }
 
 /**
- * PUT request wrapper
+ * Wrapper cho PUT request
  * @param {string} url - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} config - Additional config
- * @returns {Promise} Response data
+ * @param {Object} data - Dữ liệu request payload
+ * @param {Object} config - Cấu hình bổ sung
+ * @returns {Promise} Dữ liệu response
  */
 export async function apiPut(url, data = {}, config = {}) {
     const response = await apiCall(API_METHODS.PUT, url, data, config)
@@ -81,11 +83,11 @@ export async function apiPut(url, data = {}, config = {}) {
 }
 
 /**
- * PATCH request wrapper
+ * Wrapper cho PATCH request
  * @param {string} url - API endpoint
- * @param {Object} data - Request payload
- * @param {Object} config - Additional config
- * @returns {Promise} Response data
+ * @param {Object} data - Dữ liệu request payload
+ * @param {Object} config - Cấu hình bổ sung
+ * @returns {Promise} Dữ liệu response
  */
 export async function apiPatch(url, data = {}, config = {}) {
     const response = await apiCall(API_METHODS.PATCH, url, data, config)
@@ -93,19 +95,19 @@ export async function apiPatch(url, data = {}, config = {}) {
 }
 
 /**
- * DELETE request wrapper
+ * Wrapper cho DELETE request
  * @param {string} url - API endpoint
- * @param {Object} config - Additional config
- * @returns {Promise} Response data
+ * @param {Object} config - Cấu hình bổ sung
+ * @returns {Promise} Dữ liệu response
  */
 export async function apiDelete(url, config = {}) {
     const response = await apiCall(API_METHODS.DELETE, url, null, config)
     return response.data
 }
 
-// ===== SPECIFIC API FUNCTIONS =====
+// ===== CÁC HÀM API CỤ THỂ =====
 
-// Orders
+// Đơn hàng (Orders)
 export const ordersApi = {
     getNumbers: () => apiGet(API_ENDPOINTS.ORDERS.GET_NUMBERS),
     create: (data) => apiPost(API_ENDPOINTS.ORDERS.CREATE, data),
@@ -118,17 +120,17 @@ export const ordersApi = {
     search: (params) => apiGet(API_ENDPOINTS.ORDERS.SEARCH, params),
 }
 
-// Menus
+// Thực đơn (Menus)
 export const menusApi = {
     getById: (id) => apiGet(API_ENDPOINTS.MENUS.GET_BY_ID, { id }),
 }
 
-// Receipts
+// Biên lai (Receipts)
 export const receiptsApi = {
     create: (orderId, data) => apiPost(API_ENDPOINTS.RECEIPTS.CREATE(orderId), data),
 }
 
-// Auth
+// Xác thực (Auth)
 export const authApi = {
     login: (username, password, deviceCode = null, shopCode = null) => {
         const requestData = { username, password }
@@ -140,27 +142,4 @@ export const authApi = {
         }
         return apiPost(API_ENDPOINTS.AUTH.LOGIN, requestData)
     },
-}
-
-// Company
-export const companyApi = {
-    search: (params) => apiGet(API_ENDPOINTS.COMPANY.SEARCH, params),
-    create: (data) => apiPost(API_ENDPOINTS.COMPANY.CREATE, data),
-    update: (id, data) => apiPut(API_ENDPOINTS.COMPANY.UPDATE(id), data),
-    updateStatus: (id, status) => apiPatch(API_ENDPOINTS.COMPANY.UPDATE_STATUS(id), { status }),
-    delete: (id) => apiDelete(API_ENDPOINTS.COMPANY.DELETE(id)),
-    getById: (id) => apiGet(API_ENDPOINTS.COMPANY.GET_BY_ID(id)),
-    getDropdown: () => apiGet(API_ENDPOINTS.COMPANY.GET_DROPDOWN),
-}
-
-// Shop
-export const shopApi = {
-    search: (params) => apiGet(API_ENDPOINTS.SHOP.SEARCH, params),
-    create: (data) => apiPost(API_ENDPOINTS.SHOP.CREATE, data),
-    update: (id, data) => apiPut(API_ENDPOINTS.SHOP.UPDATE(id), data),
-    updateStatus: (id, status) => apiPatch(API_ENDPOINTS.SHOP.UPDATE_STATUS(id), { status }),
-    delete: (id) => apiDelete(API_ENDPOINTS.SHOP.DELETE(id)),
-    getById: (id) => apiGet(API_ENDPOINTS.SHOP.GET_BY_ID(id)),
-    getByCompany: (companyId) => apiGet(API_ENDPOINTS.SHOP.GET_BY_COMPANY(companyId)),
-    getDropdown: () => apiGet(API_ENDPOINTS.SHOP.GET_DROPDOWN),
 }

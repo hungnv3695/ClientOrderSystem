@@ -32,29 +32,6 @@ export const API_ENDPOINTS = {
     RECEIPTS: {
         CREATE: (orderId) => `receipts/${orderId}`,
     },
-
-    // ===== COMPANY MANAGEMENT =====
-    COMPANY: {
-        SEARCH: '/company/search',
-        CREATE: '/company',
-        UPDATE: (id) => `/company/${id}`,
-        UPDATE_STATUS: (id) => `/company/${id}/status`,
-        DELETE: (id) => `/company/${id}`,
-        GET_BY_ID: (id) => `/company/${id}`,
-        GET_DROPDOWN: '/company/dropdown',
-    },
-
-    // ===== SHOP MANAGEMENT =====
-    SHOP: {
-        SEARCH: '/shop/search',
-        CREATE: '/shop',
-        UPDATE: (id) => `/shop/${id}`,
-        UPDATE_STATUS: (id) => `/shop/${id}/status`,
-        DELETE: (id) => `/shop/${id}`,
-        GET_BY_ID: (id) => `/shop/${id}`,
-        GET_BY_COMPANY: (companyId) => `/shop/company/${companyId}`,
-        GET_DROPDOWN: '/shop/dropdown',
-    },
 }
 
 // ===== API METHODS MAPPING =====
@@ -84,25 +61,6 @@ export const API_ENDPOINTS_WITH_METHODS = {
 
     // Receipts
     CREATE_RECEIPT: { url: API_ENDPOINTS.RECEIPTS.CREATE, method: API_METHODS.POST },
-
-    // Company Management
-    SEARCH_COMPANIES: { url: API_ENDPOINTS.COMPANY.SEARCH, method: API_METHODS.GET },
-    CREATE_COMPANY: { url: API_ENDPOINTS.COMPANY.CREATE, method: API_METHODS.POST },
-    UPDATE_COMPANY: { url: API_ENDPOINTS.COMPANY.UPDATE, method: API_METHODS.PUT },
-    UPDATE_COMPANY_STATUS: { url: API_ENDPOINTS.COMPANY.UPDATE_STATUS, method: API_METHODS.PATCH },
-    DELETE_COMPANY: { url: API_ENDPOINTS.COMPANY.DELETE, method: API_METHODS.DELETE },
-    GET_COMPANY: { url: API_ENDPOINTS.COMPANY.GET_BY_ID, method: API_METHODS.GET },
-    GET_COMPANIES_DROPDOWN: { url: API_ENDPOINTS.COMPANY.GET_DROPDOWN, method: API_METHODS.GET },
-
-    // Shop Management
-    SEARCH_SHOPS: { url: API_ENDPOINTS.SHOP.SEARCH, method: API_METHODS.GET },
-    CREATE_SHOP: { url: API_ENDPOINTS.SHOP.CREATE, method: API_METHODS.POST },
-    UPDATE_SHOP: { url: API_ENDPOINTS.SHOP.UPDATE, method: API_METHODS.PUT },
-    UPDATE_SHOP_STATUS: { url: API_ENDPOINTS.SHOP.UPDATE_STATUS, method: API_METHODS.PATCH },
-    DELETE_SHOP: { url: API_ENDPOINTS.SHOP.DELETE, method: API_METHODS.DELETE },
-    GET_SHOP: { url: API_ENDPOINTS.SHOP.GET_BY_ID, method: API_METHODS.GET },
-    GET_SHOPS_BY_COMPANY: { url: API_ENDPOINTS.SHOP.GET_BY_COMPANY, method: API_METHODS.GET },
-    GET_SHOPS_DROPDOWN: { url: API_ENDPOINTS.SHOP.GET_DROPDOWN, method: API_METHODS.GET },
 }
 
 // ===== HELPER FUNCTIONS =====
