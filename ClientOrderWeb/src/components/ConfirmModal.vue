@@ -1,6 +1,6 @@
 <template>
-    <BModal v-model="isVisible" :title="title" :size="size" :hide-footer="true" @hidden="handleHidden" 
-        @show="handleShow" :header-bg-variant="headerVariant" :header-text-variant="headerTextVariant">
+    <BModal v-model="isVisible" :title="title" :size="size" @hidden="handleHidden" 
+        @show="handleShow" :header-bg-variant="headerVariant" :header-text-variant="headerTextVariant" centered>
         <!-- Modal body content -->
         <div class="modal-body-content">
             <!-- Icon -->
@@ -20,12 +20,11 @@
 
         <!-- Modal footer -->
         <template #footer>
-            <div class="d-flex justify-content-center gap-2">
+            <div class="d-flex justify-content-center gap-2 w-100">
                 <BButton 
                     :variant="confirmVariant" 
                     @click="handleConfirm" 
                     :disabled="loading"
-                    size="sm"
                 >
                     <BSpinner v-if="loading" small class="me-2" />
                     {{ confirmText }}
@@ -34,7 +33,6 @@
                     variant="outline-secondary" 
                     @click="handleCancel" 
                     :disabled="loading"
-                    size="sm"
                 >
                     {{ cancelText }}
                 </BButton>

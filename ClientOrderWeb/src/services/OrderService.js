@@ -77,6 +77,32 @@ export async function updateExistingOrder(orderId, payload) {
 }
 
 /**
+ * Cập nhật trạng thái đơn hàng
+ * @param {string} orderId - ID đơn hàng cần cập nhật
+ * @param {string} status - Trạng thái mới
+ * @returns {Object} Thông tin đơn hàng đã cập nhật
+ * @throws {Error} Nếu cập nhật thất bại hoặc thiếu orderId
+ */
+export async function updateOrderStatus(orderId, status) {
+    if (!orderId) {
+        throw new Error('orderId is required')
+    }
+    
+    try {
+        const response = await ordersApi.updateStatus(orderId, status)
+        
+        if (response?.success === true) {
+            return response.data
+        }
+
+        throw new Error(response?.message || 'Failed to update order status')
+    } catch (error) {
+        console.error('Failed to update order status:', error)
+        throw error
+    }
+}
+
+/**
  * Kiểm tra trạng thái thanh toán của đơn hàng
  * @param {string} orderId - ID đơn hàng cần kiểm tra
  * @returns {boolean} True nếu đã thanh toán, False nếu chưa

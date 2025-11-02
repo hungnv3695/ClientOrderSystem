@@ -120,12 +120,15 @@ onMounted(async () => {
  */
 async function processOrderClick(orderId, status) {
     const order = orders.value.find(o => o.id === orderId)
-    if (!order) return
+
+    // Nếu không tìm thấy đơn hàng thì return
+    if (!order) {
+        return
+    }
 
     try {
+        // Gọi API cập nhật trạng thái đơn hàng
         await ordersApi.updateStatus(orderId, status)
-        // Optimistic update (có thể bỏ nếu tin cậy socket emit)
-        //order.status = status
     } catch (e) {
         console.error('update status failed', e)
     }

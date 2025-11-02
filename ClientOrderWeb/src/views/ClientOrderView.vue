@@ -30,7 +30,7 @@
         <BContainer v-if="!isWelcome" fluid class="min-vh-100 d-flex flex-column nature-bg order-screen">
             <BRow class="order-header-modern align-items-center">
                 <BCol class="position-relative text-center">
-                    <BButton class="header-back-btn-modern" @click="resetToWelcome" title="Quay lại">
+                    <BButton class="header-back-btn-modern" @click="handleBackButton" title="Quay lại">
                         <i class="bi bi-arrow-left"></i>
                     </BButton>
                     <div class="header-title-section">
@@ -56,6 +56,20 @@
             </BRow>
             <PaymentModal v-model:show="showPayment" :qr-image="qrImage" :amount="totalAmount" :content="orderNumber"
                 :order-id="orderId" @paid="handlePaid" />
+            
+            <!-- Unified Confirmation Modal with Client Order Styling -->
+            <ClientOrderConfirmModal
+                v-model="showConfirm"
+                :title="modalConfig.title"
+                :message="modalConfig.message"
+                :description="modalConfig.description"
+                :type="modalConfig.type"
+                :size="modalConfig.size"
+                :confirm-text="modalConfig.confirmText"
+                :cancel-text="modalConfig.cancelText"
+                @confirm="modalConfig.onConfirm"
+                @cancel="modalConfig.onCancel"
+            />
         </BContainer>
     </transition>
 </template>
@@ -65,11 +79,12 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import FoodCard from '../components/FoodCard.vue'
 import OrderList from '../components/OrderList.vue'
 import PaymentModal from '../components/PaymentModal.vue'
-import { fetchMenu, submitOrder, updateExistingOrder, createReceipt } from '../services/OrderService.js'
+import ClientOrderConfirmModal from '../components/ClientOrderConfirmModal.vue'
+import { fetchMenu, submitOrder, updateExistingOrder, createReceipt, updateOrderStatus } from '../services/OrderService.js'
 import { qrCompact2 } from '../utils/qrUtils.js'
 import { getCurrentDevice, getCurrentShop, getCurrentUser, getPrinterConfigFromDevice } from '../services/AuthService.js'
 import { isAuthenticated } from '../utils/authUtils.js'
-import { API_STATUS_CODES, STRING, PAYMENT_METHOD, PAYMENT_STATUS } from '../constants/app.constants.js'
+import { API_STATUS_CODES, STRING, PAYMENT_METHOD, PAYMENT_STATUS, ORDER_STATUS } from '../constants/app.constants.js'
 import { CLIENT_ORDER_ALERT_MESS } from '../constants/msg.constants.js'
 
 // Import print functions từ LocalPrintService
@@ -89,10 +104,31 @@ const orderItems = ref([])
 /** Trạng thái hiển thị modal thanh toán */
 const showPayment = ref(false)
 
+/** Trạng thái hiển thị modal confirmation */
+const showConfirm = ref(false)
+
+/** Cấu hình modal confirmation hiện tại */
+const modalConfig = ref({
+    title: '',
+    message: '',
+    description: '',
+    type: 'info',
+    confirmText: 'Xác nhận',
+    cancelText: 'Hủy',
+    onConfirm: null,
+    onCancel: null
+})
+
 /** Trạng thái hiển thị màn hình chào mừng (true) hay màn hình đặt hàng (false) */
 const isWelcome = ref(true)
 
 // ===== CONSTANTS =====
+
+/** Loại modal xác nhận */
+const MODAL_TYPE = {
+    TIMEOUT: 'timeout',
+    CANCEL_ORDER: 'cancelOrder'
+}
 
 /** URL đường dẫn trang đăng nhập */
 const URL_LOGIN = '/login'
@@ -128,6 +164,12 @@ let orderId = STRING.EMPTY
 
 /** Timer theo dõi thời gian không hoạt động của người dùng */
 let inactivityTimer = null
+
+/** Timer cho confirm modal trước khi timeout */
+let confirmTimer = null
+
+/** Thời gian hiển thị confirm modal trước khi timeout (ms) */
+const CONFIRM_BEFORE_TIMEOUT = 15000 // 15 giây trước khi hết timeout
 
 // ===== COMPUTED PROPERTIES =====
 
@@ -171,6 +213,10 @@ onUnmounted(() => {
         clearTimeout(inactivityTimer)
         inactivityTimer = null
     }
+    if (confirmTimer) {
+        clearTimeout(confirmTimer)
+        confirmTimer = null
+    }
     
     // Remove event listeners
     window.removeEventListener(CLICK_EVENT, onActivity)
@@ -180,13 +226,60 @@ onUnmounted(() => {
 // ===== FUNCTIONS =====
 
 /**
+ * Hiển thị modal xác nhận với cấu hình tương ứng
+ * @param {string} modalType - Loại modal (MODAL_TYPE.TIMEOUT, MODAL_TYPE.CANCEL_ORDER)
+ */
+function showConfirmModal(modalType) {
+    switch (modalType) {
+        case MODAL_TYPE.TIMEOUT:
+            // Cấu hình modal timeout
+            modalConfig.value = {
+                title: 'Bạn còn đang sử dụng?',
+                message: 'Bạn có muốn tiếp tục đặt món?',
+                description: 'Nếu không xác nhận, màn hình sẽ tự động quay về trang chủ',
+                type: 'warning',
+                size: 'sm',
+                confirmText: 'Tiếp tục',
+                cancelText: 'Thoát',
+                onConfirm: () => handleTimeoutConfirm(true),
+                onCancel: () => handleTimeoutConfirm(false)
+            }
+            break
+            
+        case MODAL_TYPE.CANCEL_ORDER:
+            // Cấu hình modal hủy đơn hàng
+            modalConfig.value = {
+                title: 'Hủy đơn hàng',
+                message: 'Bạn muốn kết thúc đặt món này?',
+                description: 'Thao tác đặt món hiện tại sẽ bị hủy bỏ',
+                type: 'warning',
+                size: 'sm',
+                confirmText: 'Tiếp tục',
+                cancelText: 'Thoát',
+                onConfirm: () => handleCancelOrder(false),
+                onCancel: () => handleCancelOrder(true)
+            }
+            break
+            
+        default:
+            console.warn('Unknown modal type:', modalType)
+            return
+    }
+    
+    // Hiển thị modal
+    showConfirm.value = true
+}
+
+/**
  * Reset về màn hình chào mừng và xóa toàn bộ dữ liệu đơn hàng
  * Đồng thời xóa timer và event listeners để tránh memory leak
  */
 function resetToWelcome() {
     // Xóa timer và bỏ đăng ký sự kiện
     if (inactivityTimer) clearTimeout(inactivityTimer)
+    if (confirmTimer) clearTimeout(confirmTimer)
     inactivityTimer = null
+    confirmTimer = null
     window.removeEventListener(CLICK_EVENT, onActivity)
     window.removeEventListener(TOUCH_START_EVENT, onActivity)
 
@@ -201,13 +294,83 @@ function resetToWelcome() {
 
 /**
  * Xử lý hoạt động của người dùng (click, touch) để reset timer không hoạt động
- * Sau 60 giây không hoạt động sẽ tự động quay về màn hình chào mừng
+ * Sau 60 giây không hoạt động sẽ hiển thị modal xác nhận, sau 10 giây nữa sẽ tự động reset
  */
 function onActivity() {
     if (inactivityTimer) clearTimeout(inactivityTimer)
+    if (confirmTimer) clearTimeout(confirmTimer)
+    showConfirm.value = false
+    
+    // Sau 60 giây (ORDER_SCREEN_TIME_OUT) sẽ hiển thị modal xác nhận
     inactivityTimer = setTimeout(() => {
-        resetToWelcome()
+        showConfirmModal(MODAL_TYPE.TIMEOUT)
+        
+        // Sau 15 giây nữa nếu không có phản hồi thì tự động reset
+        confirmTimer = setTimeout(() => {
+            handleTimeoutConfirm(false)
+        }, CONFIRM_BEFORE_TIMEOUT)
     }, ORDER_SCREEN_TIME_OUT)
+}
+
+/**
+ * Xử lý khi người dùng xác nhận/hủy modal timeout
+ * @param {boolean} continueUsing - True nếu người dùng muốn tiếp tục, false nếu timeout hoặc hủy
+ */
+function handleTimeoutConfirm(continueUsing) {
+    // Đóng modal xác nhận
+    showConfirm.value = false
+
+    // Kiểm tra xem có timer không
+    if (confirmTimer) {
+        // Nếu có thì xóa timer
+        clearTimeout(confirmTimer)
+    }
+
+    // Reset confirmTimer về null
+    confirmTimer = null
+    
+    // Kiểm tra xem người dùng có muốn tiếp tục không
+    if (continueUsing) {
+        // Người dùng muốn tiếp tục - reset timer
+        onActivity()
+    } else {
+        // Người dùng không muốn tiếp tục - hủy đơn hàng đã tạo
+        cancelOrder()
+
+        // Timeout hoặc người dùng hủy - reset về welcome
+        resetToWelcome()
+    }
+}
+
+/**
+ * Xử lý sự kiện click nút quay lại
+ * Kiểm tra nếu có đơn hàng đang tồn tại thì hiển thị modal xác nhận hủy đơn
+ */
+function handleBackButton() {
+    // Kiểm tra nếu có orderId (đơn hàng đang tồn tại)
+    if (orderId) {
+        // Hiển thị modal xác nhận hủy đơn hàng
+        showConfirmModal(MODAL_TYPE.CANCEL_ORDER)
+    } else {
+        // Không có đơn hàng - reset về welcome ngay
+        resetToWelcome()
+    }
+}
+
+/**
+ * Xử lý khi người dùng xác nhận/hủy modal hủy đơn hàng
+ * @param {boolean} confirmed - True nếu người dùng xác nhận hủy đơn, false nếu không
+ */
+function handleCancelOrder(confirmed) {
+    // Đóng modal
+    showConfirm.value = false
+    
+    if (confirmed) {
+        // Người dùng xác nhận hủy đơn - hủy đơn hàng và reset về welcome
+        cancelOrder()
+        resetToWelcome()
+    }
+    // Nếu không xác nhận thì không làm gì - tiếp tục ở màn hình đặt hàng
 }
 
 /**
@@ -217,8 +380,10 @@ function onActivity() {
 function openOrderScreen() {
     isWelcome.value = false
     // Đảm bảo không nhân đôi listener
+    // Xóa listener cũ trước khi thêm mới
     window.removeEventListener(CLICK_EVENT, onActivity)
     window.removeEventListener(TOUCH_START_EVENT, onActivity)
+    // Thêm listener mới
     window.addEventListener(CLICK_EVENT, onActivity)
     window.addEventListener(TOUCH_START_EVENT, onActivity)
     onActivity()
@@ -342,6 +507,23 @@ async function createOrder() {
         
         const errorMessage = error.response?.data?.message || error.message || 'Không thể tạo đơn hàng'
         alert(CLIENT_ORDER_ALERT_MESS.ORDER_CREATE_ERROR.replace('{errorMessage}', errorMessage))
+    }
+}
+
+/**
+ * Hủy đơn hàng hiện tại bằng cách cập nhật trạng thái thành "Đã hủy"
+ */
+async function cancelOrder() {
+    // Kiểm tra đã có orderId chưa
+    if (!orderId) {
+        return
+    }   
+
+    try {
+        // Cập nhật trạng thái đơn hàng thành "Đã hủy"
+        await updateOrderStatus(orderId, ORDER_STATUS.CANCELLED)
+    } catch (error) {
+        console.error('Order cancellation failed:', error)
     }
 }
 
