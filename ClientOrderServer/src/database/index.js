@@ -71,17 +71,25 @@ Device.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 DeviceType.hasMany(Device, { foreignKey: 'type_id', as: 'devices' });
 Device.belongsTo(DeviceType, { foreignKey: 'type_id', as: 'deviceType' });
 
-// Keep seeding for menu/food only
+// Keep seeding for menu/food only (DEV ONLY)
 sequelize.sync({ alter: true }).then(async () => {
     console.log('Database synchronized');
     
-    // Pass all models to the seed function
-    const models = {
-        Food, Menu, MenuFood, Company, User, Shop, UserShop,
-        DeviceType, Device, sequelize
-    };
-    
-    await seedInitialData(models);
+    // ONLY seed data in development environment
+    if (process.env.NODE_ENV === 'development') {
+        console.log('🌱 Seeding initial data (Development only)...');
+        
+        // Pass all models to the seed function
+        const models = {
+            Food, Menu, MenuFood, Company, User, Shop, UserShop,
+            DeviceType, Device, sequelize
+        };
+        
+        await seedInitialData(models);
+        console.log('✅ Seeding completed');
+    } else {
+        console.log('⏭️  Skipping seeding (Production environment)');
+    }
 }).catch(err => {
     console.error('Failed to synchronize database:', err);
 });

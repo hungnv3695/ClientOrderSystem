@@ -77,8 +77,6 @@ const emit = defineEmits(['update:modelValue', 'confirm', 'cancel', 'show', 'hid
 </script>
 
 <style>
-/* Import color variables from app */
-@import '../assets/css/color.css';
 
 /* ===== CLIENT ORDER MODAL CUSTOM STYLING ===== */
 
